@@ -19,66 +19,50 @@ from aiogram.types import (
 
 # ============================================================
 # ISH BAZASI BOT
-# aiogram 3.x
-#
-# ASOSIY QOIDALAR:
-# 1) Telegram kanalga majburiy obuna tekshiriladi.
-# 2) Instagram tugmasi ko'rsatiladi, lekin Instagram obunasi tekshirilmaydi.
-# 3) 1 kunlik bepul tarif har bir foydalanuvchiga faqat 1 marta.
-# 4) E'lon uzunligiga limit qo'yilmaydi. Har bir e'lonni admin tasdiqlaydi/rad etadi.
-# 5) To'lov -> chek -> admin tekshiruvi -> tasdiq/rad.
-# 6) Admin panelda e'lonlarni ko'rish va kanal postini o'chirish mumkin.
-# 7) 1/2/3 kunlik e'lonlar muddati tugaganda avtomatik o'chadi.
-# 8) Umrbod e'lon avtomatik o'chirilmaydi.
+# Railway + aiogram 3.x
 # ============================================================
 
 TOKEN = os.getenv("BOT_TOKEN")
 
-ADMIN_ID = 8451295149
+ADMIN_ID = int(os.getenv("ADMIN_ID", "8451295149"))
 ADMIN_CONTACT = os.getenv("ADMIN_CONTACT", "@rustamovvvll")
 
-# E'lonlar chiqadigan kanal.
 CHANNEL_ID = os.getenv("CHANNEL_ID", "@Ishbazasi")
-
-# Majburiy Telegram kanal.
 REQUIRED_CHANNEL = os.getenv("REQUIRED_CHANNEL", "@Ishbazasi")
 
-# Instagram faqat ko'rsatiladi, obunasi bot tomonidan tekshirilmaydi.
-INSTAGRAM_USERNAME = "ishbazasi"
-INSTAGRAM_URL = "https://instagram.com/ishbazasi"
+INSTAGRAM_USERNAME = os.getenv("INSTAGRAM_USERNAME", "ishbazasi")
+INSTAGRAM_URL = f"https://instagram.com/{INSTAGRAM_USERNAME}"
 
-# Railway Variables.
 CARD_NUMBER = os.getenv("CARD_NUMBER", "")
 CARD_HOLDER = os.getenv("CARD_HOLDER", "Diyorbek Rustamov")
 
 DB_PATH = os.getenv("DB_PATH", "bot.db")
 
-# Pullik tarif tanlangandan keyin chek yuborish uchun vaqt.
 RECEIPT_MINUTES = 10
-
-# Admin e'lonlar ro'yxatida bir sahifada nechta e'lon.
 ADMIN_PAGE_SIZE = 8
 
 if not TOKEN:
-    raise RuntimeError("BOT_TOKEN topilmadi. Railway Variables ga BOT_TOKEN kiriting.")
+    raise RuntimeError(
+        "BOT_TOKEN topilmadi. Railway Variables ga BOT_TOKEN kiriting."
+    )
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("ishbazasi")
 
 bot = Bot(TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 
 
 # ============================================================
-# YORDAMCHI FUNKSIYALAR
+# DATABASE
 # ============================================================
 
 def db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -88,39 +72,13 @@ def now():
 
 
 def esc(value):
-    """User yozgan matnni Telegram HTML formatini buzmaydigan qiladi."""
     return html.escape(str(value or ""))
 
 
-def channel_username():
-    value = CHANNEL_ID.strip()
-    if value.startswith("@"):
-        return value[1:]
-    return ""
-
-
-def channel_url():
-    username = channel_username()
-    return f"https://t.me/{username}" if username else None
-
-
-def short_status(status):
-    return {
-        "pending": "⏳ Kutilmoqda",
-        "published": "✅ Kanalda",
-        "rejected": "❌ Rad etilgan",
-        "expired": "⌛ Muddati tugagan",
-        "cancelled": "🚫 Bekor qilingan",
-        "deleted": "🗑 O'chirilgan",
-    }.get(status, status)
-
-
-# ============================================================
-# DATABASE
-# ============================================================
-
 def init_db():
     with db() as c:
+        c.execute("PRAGMA journal_mode=WAL")
+
         c.executescript(
             """
             CREATE TABLE IF NOT EXISTS users (
@@ -138,7 +96,7 @@ def init_db():
                 telegram_id INTEGER NOT NULL,
                 user_id INTEGER NOT NULL,
 
-                title TEXT,
+                title TEXT NOT NULL,
                 location TEXT NOT NULL,
                 profession TEXT NOT NULL,
                 conditions TEXT NOT NULL,
@@ -174,13 +132,18 @@ def init_db():
 
 
 def register_user(user: types.User):
-    t = now().isoformat()
+    current = now().isoformat()
 
     with db() as c:
         c.execute(
             """
-            INSERT INTO users
-            (telegram_id, username, first_name, created_at, last_seen)
+            INSERT INTO users (
+                telegram_id,
+                username,
+                first_name,
+                created_at,
+                last_seen
+            )
             VALUES (?, ?, ?, ?, ?)
 
             ON CONFLICT(telegram_id)
@@ -193,8 +156,8 @@ def register_user(user: types.User):
                 user.id,
                 user.username,
                 user.first_name,
-                t,
-                t,
+                current,
+                current,
             ),
         )
 
@@ -205,6 +168,7 @@ def get_user_db_id(telegram_id):
             "SELECT id FROM users WHERE telegram_id=?",
             (telegram_id,),
         ).fetchone()
+
         return row["id"] if row else None
 
 
@@ -255,7 +219,40 @@ def update_payment_status(payment_id, status):
 
 
 # ============================================================
-# TUGMALAR
+# HELPER
+# ============================================================
+
+def channel_username():
+    value = CHANNEL_ID.strip()
+
+    if value.startswith("@"):
+        return value[1:]
+
+    return ""
+
+
+def channel_url():
+    username = channel_username()
+
+    if username:
+        return f"https://t.me/{username}"
+
+    return None
+
+
+def short_status(status):
+    return {
+        "pending": "⏳ Kutilmoqda",
+        "published": "✅ Kanalda",
+        "rejected": "❌ Rad etilgan",
+        "expired": "⌛ Muddati tugagan",
+        "cancelled": "🚫 Bekor qilingan",
+        "deleted": "🗑 O'chirilgan",
+    }.get(status, status)
+
+
+# ============================================================
+# KEYBOARDS
 # ============================================================
 
 def main_menu():
@@ -274,13 +271,13 @@ def subscription_keyboard():
         inline_keyboard=[
             [
                 B(
-                    text="📢 Telegram kanalga obuna bo'lish — SHART!",
+                    text="📢 Telegram kanalga obuna bo'lish",
                     url=f"https://t.me/{REQUIRED_CHANNEL.lstrip('@')}",
                 )
             ],
             [
                 B(
-                    text="📸 Instagramga obuna bo'lish — SHART!",
+                    text="📸 Instagramga o'tish",
                     url=INSTAGRAM_URL,
                 )
             ],
@@ -298,15 +295,30 @@ def admin_keyboard():
     return IK(
         inline_keyboard=[
             [
-                B(text="📊 Statistika", callback_data="admin_stats"),
-                B(text="📢 E'lonlar", callback_data="admin_ads"),
+                B(
+                    text="📊 Statistika",
+                    callback_data="admin_stats",
+                ),
+                B(
+                    text="📢 E'lonlar",
+                    callback_data="admin_ads",
+                ),
             ],
             [
-                B(text="💳 To'lovlar", callback_data="admin_payments"),
-                B(text="👥 Foydalanuvchilar", callback_data="admin_users"),
+                B(
+                    text="💳 To'lovlar",
+                    callback_data="admin_payments",
+                ),
+                B(
+                    text="👥 Foydalanuvchilar",
+                    callback_data="admin_users",
+                ),
             ],
             [
-                B(text="📣 Hammaga xabar", callback_data="admin_broadcast"),
+                B(
+                    text="📣 Hammaga xabar",
+                    callback_data="admin_broadcast",
+                )
             ],
         ]
     )
@@ -360,25 +372,47 @@ def admin_ads_filter_keyboard():
     return IK(
         inline_keyboard=[
             [
-                B(text="⏳ Kutilayotgan", callback_data="admin_list_pending_0"),
-                B(text="✅ Kanalda", callback_data="admin_list_published_0"),
+                B(
+                    text="⏳ Kutilayotgan",
+                    callback_data="admin_list_pending_0",
+                ),
+                B(
+                    text="✅ Kanalda",
+                    callback_data="admin_list_published_0",
+                ),
             ],
             [
-                B(text="❌ Rad etilgan", callback_data="admin_list_rejected_0"),
-                B(text="⌛ Tugagan", callback_data="admin_list_expired_0"),
+                B(
+                    text="❌ Rad etilgan",
+                    callback_data="admin_list_rejected_0",
+                ),
+                B(
+                    text="⌛ Tugagan",
+                    callback_data="admin_list_expired_0",
+                ),
             ],
             [
-                B(text="🗑 O'chirilgan", callback_data="admin_list_deleted_0"),
+                B(
+                    text="🚫 Bekor qilingan",
+                    callback_data="admin_list_cancelled_0",
+                ),
+                B(
+                    text="🗑 O'chirilgan",
+                    callback_data="admin_list_deleted_0",
+                ),
             ],
             [
-                B(text="⬅️ Admin panel", callback_data="admin_home"),
+                B(
+                    text="⬅️ Admin panel",
+                    callback_data="admin_home",
+                )
             ],
         ]
     )
 
 
 # ============================================================
-# OBUNANI TEKSHIRISH
+# SUBSCRIPTION
 # ============================================================
 
 async def telegram_subscribed(user_id: int) -> bool:
@@ -391,7 +425,10 @@ async def telegram_subscribed(user_id: int) -> bool:
         return member.status not in ("left", "kicked")
 
     except Exception as e:
-        log.error("Telegram obuna tekshirish xatosi: %s", e)
+        log.error(
+            "Telegram obunasini tekshirishda xato: %s",
+            e,
+        )
         return False
 
 
@@ -403,16 +440,21 @@ async def ensure_subscription(message: types.Message) -> bool:
         """
 ❌ <b>Majburiy obuna kerak!</b>
 
-Botdan foydalanish uchun Telegram kanalimizga obuna bo'lishingiz shart.
+Botdan foydalanish uchun Telegram kanalimizga
+obuna bo'lishingiz shart.
 
 📢 Telegram kanal — <b>SHART</b>
-📸 Instagram — <b>SHART</b>
+📸 Instagram — <b>tavsiya etiladi</b>
 
 Instagram obunasi bot tomonidan tekshirilmaydi.
+
+Avval Telegram kanalga obuna bo'ling,
+keyin <b>✅ Obunani tekshirish</b> tugmasini bosing.
 """,
         reply_markup=subscription_keyboard(),
         parse_mode="HTML",
     )
+
     return False
 
 
@@ -440,7 +482,7 @@ class BroadcastForm(StatesGroup):
 
 
 # ============================================================
-# TARIFLAR
+# TARIFFS
 # ============================================================
 
 TARIFFS = {
@@ -465,18 +507,13 @@ TARIFFS = {
     4: {
         "days": 0,
         "price": 30000,
-        "name": "♾ Umrbod — 30 000 so'm",
+        "name": "Umrbod — 30 000 so'm",
         "lifetime": 1,
     },
 }
 
 
 def has_used_free_ad(telegram_id):
-    """
-    Faqat 1 marta bepul.
-    Bekor qilingan yoki rad etilgan bepul e'lon qayta bepul olish
-    imkonini bermaydi, chunki bepul imkoniyat bir marta ishlatilgan hisoblanadi.
-    """
     with db() as c:
         row = c.execute(
             """
@@ -510,12 +547,10 @@ async def start(message: types.Message):
 Botdan foydalanish uchun:
 
 📢 Telegram kanalimizga obuna bo'lish — <b>SHART</b>
-📸 Instagram sahifamizga obuna bo'lish — <b>SHART</b>
+📸 Instagram sahifamizga o'tish — <b>tavsiya etiladi</b>
 
-Instagram obunasi bot tomonidan tekshirilmaydi.
-
-Pastdagi tugmalar orqali obuna bo'ling va
-<b>✅ Obunani tekshirish</b>ni bosing.
+Pastdagi tugma orqali Telegram kanalga obuna bo'ling
+va keyin <b>✅ Obunani tekshirish</b>ni bosing.
 """,
             reply_markup=subscription_keyboard(),
             parse_mode="HTML",
@@ -555,6 +590,7 @@ Endi botdan foydalanishingiz mumkin.
             reply_markup=main_menu(),
             parse_mode="HTML",
         )
+
     else:
         await callback.answer(
             "❌ Avval Telegram kanalga obuna bo'ling!",
@@ -581,11 +617,14 @@ Savol yoki muammo bo'lsa, admin bilan bog'lanishingiz mumkin.
 
 
 # ============================================================
-# E'LON BOSHLASH
+# CREATE AD
 # ============================================================
 
 @dp.message(F.text == "🚀 E'lon berish")
-async def start_ad(message: types.Message, state: FSMContext):
+async def start_ad(
+    message: types.Message,
+    state: FSMContext,
+):
     register_user(message.from_user)
 
     if not await ensure_subscription(message):
@@ -606,7 +645,10 @@ Masalan:
 
 
 @dp.message(AdForm.title)
-async def ad_title(message: types.Message, state: FSMContext):
+async def ad_title(
+    message: types.Message,
+    state: FSMContext,
+):
     text = (message.text or "").strip()
 
     if not text:
@@ -617,13 +659,17 @@ async def ad_title(message: types.Message, state: FSMContext):
     await state.set_state(AdForm.location)
 
     await message.answer(
-        "📍 <b>Ish joyi qayerda?</b>\n\nMasalan: Toshkent, Chilonzor",
+        "📍 <b>Ish joyi qayerda?</b>\n\n"
+        "Masalan: Toshkent, Chilonzor",
         parse_mode="HTML",
     )
 
 
 @dp.message(AdForm.location)
-async def ad_location(message: types.Message, state: FSMContext):
+async def ad_location(
+    message: types.Message,
+    state: FSMContext,
+):
     text = (message.text or "").strip()
 
     if not text:
@@ -634,13 +680,17 @@ async def ad_location(message: types.Message, state: FSMContext):
     await state.set_state(AdForm.profession)
 
     await message.answer(
-        "💼 <b>Qanday ishchi kerak?</b>\n\nMasalan: Ofitsiant",
+        "💼 <b>Qanday ishchi kerak?</b>\n\n"
+        "Masalan: Ofitsiant",
         parse_mode="HTML",
     )
 
 
 @dp.message(AdForm.profession)
-async def ad_profession(message: types.Message, state: FSMContext):
+async def ad_profession(
+    message: types.Message,
+    state: FSMContext,
+):
     text = (message.text or "").strip()
 
     if not text:
@@ -656,19 +706,23 @@ async def ad_profession(message: types.Message, state: FSMContext):
 
 Maosh, ish vaqti, talablar va boshqa ma'lumotlarni yozing.
 
-ℹ️ <b>Maxsus uzunlik limiti yo'q.</b>
-Admin e'lonni ko'rib chiqadi va tasdiqlaydi yoki rad etadi.
+ℹ️ Maxsus uzunlik limiti yo'q.
 """,
         parse_mode="HTML",
     )
 
 
 @dp.message(AdForm.conditions)
-async def ad_conditions(message: types.Message, state: FSMContext):
+async def ad_conditions(
+    message: types.Message,
+    state: FSMContext,
+):
     text = (message.text or "").strip()
 
     if not text:
-        await message.answer("❌ Batafsil ma'lumotni yozing.")
+        await message.answer(
+            "❌ Batafsil ma'lumotni yozing."
+        )
         return
 
     await state.update_data(conditions=text)
@@ -685,11 +739,16 @@ Telefon raqami yoki Telegram username.
 
 
 @dp.message(AdForm.contact)
-async def ad_contact(message: types.Message, state: FSMContext):
+async def ad_contact(
+    message: types.Message,
+    state: FSMContext,
+):
     text = (message.text or "").strip()
 
     if not text:
-        await message.answer("❌ Aloqa ma'lumotini yozing.")
+        await message.answer(
+            "❌ Aloqa ma'lumotini yozing."
+        )
         return
 
     await state.update_data(contact=text)
@@ -699,9 +758,7 @@ async def ad_contact(message: types.Message, state: FSMContext):
         """
 🖼 <b>E'lon uchun rasm yuboring.</b>
 
-Ish joyi, kompaniya yoki vakansiyaga mos rasm yuborishingiz mumkin.
-
-Agar rasm bo'lmasa, pastdagi tugmani bosib o'tkazib yuboring.
+Agar rasm bo'lmasa, pastdagi tugmani bosing.
 """,
         reply_markup=image_skip_keyboard(),
         parse_mode="HTML",
@@ -709,34 +766,65 @@ Agar rasm bo'lmasa, pastdagi tugmani bosib o'tkazib yuboring.
 
 
 # ============================================================
-# RASM
+# IMAGE
 # ============================================================
 
-@dp.message(AdForm.image, F.photo)
-async def ad_image(message: types.Message, state: FSMContext):
-    photo = message.photo[-1]
-
-    await state.update_data(image_file_id=photo.file_id)
+async def show_tariffs(
+    message: types.Message,
+    state: FSMContext,
+    edit=False,
+):
     await state.set_state(AdForm.tariff)
 
-    await message.answer(
+    text = (
         "💰 <b>E'lon muddatini tanlang:</b>\n\n"
-        "🆓 1 kunlik bepul tarif faqat bir marta beriladi.",
-        reply_markup=tariff_keyboard(),
-        parse_mode="HTML",
+        "🆓 1 kunlik bepul tarif faqat bir marta beriladi."
     )
 
+    if edit:
+        await message.edit_text(
+            text,
+            reply_markup=tariff_keyboard(),
+            parse_mode="HTML",
+        )
+    else:
+        await message.answer(
+            text,
+            reply_markup=tariff_keyboard(),
+            parse_mode="HTML",
+        )
 
-@dp.callback_query(AdForm.image, F.data == "skip_image")
-async def skip_image(callback: types.CallbackQuery, state: FSMContext):
-    await state.update_data(image_file_id=None)
-    await state.set_state(AdForm.tariff)
 
-    await callback.message.edit_text(
-        "💰 <b>E'lon muddatini tanlang:</b>\n\n"
-        "🆓 1 kunlik bepul tarif faqat bir marta beriladi.",
-        reply_markup=tariff_keyboard(),
-        parse_mode="HTML",
+@dp.message(AdForm.image, F.photo)
+async def ad_image(
+    message: types.Message,
+    state: FSMContext,
+):
+    photo = message.photo[-1]
+
+    await state.update_data(
+        image_file_id=photo.file_id
+    )
+
+    await show_tariffs(message, state)
+
+
+@dp.callback_query(
+    AdForm.image,
+    F.data == "skip_image",
+)
+async def skip_image(
+    callback: types.CallbackQuery,
+    state: FSMContext,
+):
+    await state.update_data(
+        image_file_id=None
+    )
+
+    await show_tariffs(
+        callback.message,
+        state,
+        edit=True,
     )
 
     await callback.answer()
@@ -745,13 +833,14 @@ async def skip_image(callback: types.CallbackQuery, state: FSMContext):
 @dp.message(AdForm.image)
 async def wrong_image(message: types.Message):
     await message.answer(
-        "🖼 Iltimos, rasm yuboring yoki ⏭ O'tkazib yuborish tugmasini bosing.",
+        "🖼 Iltimos, rasm yuboring yoki "
+        "⏭ O'tkazib yuborish tugmasini bosing.",
         reply_markup=image_skip_keyboard(),
     )
 
 
 # ============================================================
-# E'LON YARATISH
+# CREATE AD / PAYMENT
 # ============================================================
 
 def create_ad(telegram_id, data, tariff):
@@ -775,16 +864,19 @@ def create_ad(telegram_id, data, tariff):
                 status,
                 created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                'pending', ?
+            )
             """,
             (
                 telegram_id,
                 user_id,
                 data.get("title", ""),
-                data["location"],
-                data["profession"],
-                data["conditions"],
-                data["contact"],
+                data.get("location", ""),
+                data.get("profession", ""),
+                data.get("conditions", ""),
+                data.get("contact", ""),
                 data.get("image_file_id"),
                 tariff["days"],
                 tariff["price"],
@@ -796,8 +888,14 @@ def create_ad(telegram_id, data, tariff):
         return cursor.lastrowid
 
 
-def create_payment(ad_id, telegram_id, amount):
-    expires = now() + timedelta(minutes=RECEIPT_MINUTES)
+def create_payment(
+    ad_id,
+    telegram_id,
+    amount,
+):
+    expires = now() + timedelta(
+        minutes=RECEIPT_MINUTES
+    )
 
     with db() as c:
         cursor = c.execute(
@@ -810,7 +908,9 @@ def create_payment(ad_id, telegram_id, amount):
                 expires_at,
                 created_at
             )
-            VALUES (?, ?, ?, 'waiting', ?, ?)
+            VALUES (
+                ?, ?, ?, 'waiting', ?, ?
+            )
             """,
             (
                 ad_id,
@@ -824,10 +924,6 @@ def create_payment(ad_id, telegram_id, amount):
         return cursor.lastrowid
 
 
-# ============================================================
-# TARIF TANLASH
-# ============================================================
-
 @dp.callback_query(
     AdForm.tariff,
     F.data.regexp(r"^tariff_[1-4]$")
@@ -836,18 +932,25 @@ async def choose_tariff(
     callback: types.CallbackQuery,
     state: FSMContext,
 ):
-    tariff_id = int(callback.data.split("_")[1])
+    tariff_id = int(
+        callback.data.split("_")[1]
+    )
+
     tariff = TARIFFS[tariff_id]
 
-    data = await state.get_data()
-
-    # 1 kunlik bepul faqat birinchi marta.
-    if tariff_id == 1 and has_used_free_ad(callback.from_user.id):
+    if (
+        tariff_id == 1
+        and has_used_free_ad(
+            callback.from_user.id
+        )
+    ):
         await callback.answer(
-            "❌ Siz 1 kunlik bepul e'lon imkoniyatidan foydalanib bo'lgansiz.",
+            "❌ Siz bepul tarifdan foydalanib bo'lgansiz.",
             show_alert=True,
         )
         return
+
+    data = await state.get_data()
 
     ad_id = create_ad(
         callback.from_user.id,
@@ -855,9 +958,9 @@ async def choose_tariff(
         tariff,
     )
 
-    # ========================================================
-    # BEPUL
-    # ========================================================
+    # --------------------------------------------------------
+    # FREE
+    # --------------------------------------------------------
 
     if tariff["price"] == 0:
         await state.clear()
@@ -878,9 +981,9 @@ Admin ma'qullasa avtomatik kanalga chiqariladi.
         await callback.answer()
         return
 
-    # ========================================================
-    # PULLIK
-    # ========================================================
+    # --------------------------------------------------------
+    # PAID
+    # --------------------------------------------------------
 
     payment_id = create_payment(
         ad_id,
@@ -893,20 +996,29 @@ Admin ma'qullasa avtomatik kanalga chiqariladi.
         payment_id=payment_id,
     )
 
-    await state.set_state(AdForm.receipt)
+    await state.set_state(
+        AdForm.receipt
+    )
 
-    card = CARD_NUMBER or "KARTA RAQAMI RAILWAY VARIABLES'DA KIRITILADI"
+    card = (
+        CARD_NUMBER
+        or "CARD_NUMBER Railway Variables'da kiritilmagan"
+    )
 
     if tariff["lifetime"]:
         duration_text = "♾ <b>UMRBOD</b>"
     else:
-        duration_text = f"⏰ <b>{tariff['days']} kun</b>"
+        duration_text = (
+            f"⏰ <b>{tariff['days']} kun</b>"
+        )
 
     await callback.message.edit_text(
         f"""
 💳 <b>TO'LOV</b>
 
-📦 Tarif: {esc(tariff['name'])}
+📦 Tarif:
+<b>{esc(tariff['name'])}</b>
+
 {duration_text}
 
 💰 <b>Summa: {tariff['price']:,} so'm</b>
@@ -917,8 +1029,7 @@ Admin ma'qullasa avtomatik kanalga chiqariladi.
 👤 Karta egasi:
 <b>{esc(CARD_HOLDER)}</b>
 
-To'lovni amalga oshirgach:
-
+To'lovni amalga oshirgach,
 👇 <b>“💳 To'lov qildim”</b> tugmasini bosing.
 
 ⏰ Chekni {RECEIPT_MINUTES} daqiqa ichida yuboring.
@@ -940,15 +1051,20 @@ To'lovni amalga oshirgach:
 
 
 # ============================================================
-# TO'LOV QILDIM
+# PAID
 # ============================================================
 
-@dp.callback_query(F.data.regexp(r"^paid_\d+$"))
+@dp.callback_query(
+    F.data.regexp(r"^paid_\d+$")
+)
 async def paid(
     callback: types.CallbackQuery,
     state: FSMContext,
 ):
-    payment_id = int(callback.data.split("_")[1])
+    payment_id = int(
+        callback.data.split("_")[1]
+    )
+
     payment = get_payment(payment_id)
 
     if not payment:
@@ -958,7 +1074,10 @@ async def paid(
         )
         return
 
-    if payment["telegram_id"] != callback.from_user.id:
+    if (
+        payment["telegram_id"]
+        != callback.from_user.id
+    ):
         await callback.answer(
             "❌ Bu to'lov sizga tegishli emas.",
             show_alert=True,
@@ -967,39 +1086,58 @@ async def paid(
 
     if payment["status"] == "receipt_received":
         await callback.answer(
-            "⏳ Chekingiz allaqachon yuborilgan. Admin tekshiradi.",
+            "⏳ Chek allaqachon yuborilgan.",
             show_alert=True,
         )
         return
 
-    if payment["status"] != "waiting":
+    if payment["status"] not in (
+        "waiting",
+        "paid",
+    ):
         await callback.answer(
             "❌ Bu to'lov sessiyasi faol emas.",
             show_alert=True,
         )
         return
 
-    expires = datetime.fromisoformat(payment["expires_at"])
+    expires = datetime.fromisoformat(
+        payment["expires_at"]
+    )
 
     if now() > expires:
-        update_payment_status(payment_id, "expired")
-        update_ad_status(payment["ad_id"], "cancelled")
+        update_payment_status(
+            payment_id,
+            "expired",
+        )
+
+        update_ad_status(
+            payment["ad_id"],
+            "cancelled",
+        )
+
         await state.clear()
 
         await callback.message.edit_text(
-            "❌ Chek yuborish vaqti tugagan. Iltimos, e'lonni qaytadan yarating."
+            "❌ Chek yuborish vaqti tugagan."
         )
+
         await callback.answer()
         return
 
-    # To'lov jarayoni "paid" bosqichiga o'tadi.
-    update_payment_status(payment_id, "paid")
+    update_payment_status(
+        payment_id,
+        "paid",
+    )
 
     await state.update_data(
         ad_id=payment["ad_id"],
         payment_id=payment_id,
     )
-    await state.set_state(AdForm.receipt)
+
+    await state.set_state(
+        AdForm.receipt
+    )
 
     await callback.message.answer(
         f"""
@@ -1012,54 +1150,94 @@ Chekni <b>RASM</b> ko'rinishida yuboring.
         parse_mode="HTML",
     )
 
-    await callback.answer("✅ To'lov bosqichi qabul qilindi.")
+    await callback.answer(
+        "✅ To'lov bosqichi qabul qilindi."
+    )
 
 
 # ============================================================
-# CHEK QABUL QILISH
+# RECEIPT
 # ============================================================
 
-@dp.message(AdForm.receipt, F.photo)
+@dp.message(
+    AdForm.receipt,
+    F.photo,
+)
 async def receive_receipt(
     message: types.Message,
     state: FSMContext,
 ):
     data = await state.get_data()
-    payment_id = data.get("payment_id")
 
-    payment = get_payment(payment_id)
+    payment_id = data.get(
+        "payment_id"
+    )
+
+    if not payment_id:
+        await state.clear()
+
+        await message.answer(
+            "❌ To'lov sessiyasi topilmadi."
+        )
+        return
+
+    payment = get_payment(
+        payment_id
+    )
 
     if not payment:
-        await message.answer(
-            "❌ To'lov topilmadi. E'lonni qaytadan boshlang."
-        )
         await state.clear()
+
+        await message.answer(
+            "❌ To'lov topilmadi."
+        )
         return
 
-    if payment["telegram_id"] != message.from_user.id:
-        await message.answer("❌ Bu to'lov sizga tegishli emas.")
+    if (
+        payment["telegram_id"]
+        != message.from_user.id
+    ):
+        await message.answer(
+            "❌ Bu to'lov sizga tegishli emas."
+        )
         return
 
-    if payment["status"] not in ("paid", "waiting"):
+    if payment["status"] not in (
+        "waiting",
+        "paid",
+    ):
+        await state.clear()
+
         await message.answer(
             "❌ Bu to'lov sessiyasi faol emas."
         )
-        await state.clear()
         return
 
-    expires = datetime.fromisoformat(payment["expires_at"])
+    expires = datetime.fromisoformat(
+        payment["expires_at"]
+    )
 
     if now() > expires:
-        update_payment_status(payment_id, "expired")
-        update_ad_status(payment["ad_id"], "cancelled")
+        update_payment_status(
+            payment_id,
+            "expired",
+        )
+
+        update_ad_status(
+            payment["ad_id"],
+            "cancelled",
+        )
+
         await state.clear()
 
         await message.answer(
-            "❌ Chek yuborish vaqti tugagan. E'lon bekor qilindi."
+            "❌ Chek yuborish vaqti tugagan."
         )
         return
 
-    receipt_file_id = message.photo[-1].file_id
+    receipt_file_id = (
+        message.photo[-1].file_id
+    )
 
     with db() as c:
         c.execute(
@@ -1077,7 +1255,9 @@ async def receive_receipt(
 
     await state.clear()
 
-    await send_ad_to_admin(payment["ad_id"])
+    await send_ad_to_admin(
+        payment["ad_id"]
+    )
 
     await message.answer(
         """
@@ -1093,7 +1273,9 @@ Tasdiqlangandan keyin e'lon avtomatik kanalga chiqariladi.
 
 
 @dp.message(AdForm.receipt)
-async def receipt_not_photo(message: types.Message):
+async def receipt_not_photo(
+    message: types.Message,
+):
     await message.answer(
         "📸 Iltimos, to'lov chekini <b>rasm</b> qilib yuboring.",
         parse_mode="HTML",
@@ -1101,7 +1283,7 @@ async def receipt_not_photo(message: types.Message):
 
 
 # ============================================================
-# ADMINGA E'LON YUBORISH
+# ADMIN: NEW AD
 # ============================================================
 
 async def send_ad_to_admin(ad_id):
@@ -1110,15 +1292,21 @@ async def send_ad_to_admin(ad_id):
     if not ad:
         return
 
-    payment = latest_payment(ad_id)
+    payment = latest_payment(
+        ad_id
+    )
 
     username = "username yo'q"
 
     try:
-        user = await bot.get_chat(ad["telegram_id"])
+        user = await bot.get_chat(
+            ad["telegram_id"]
+        )
 
         if user.username:
-            username = f"@{user.username}"
+            username = (
+                f"@{user.username}"
+            )
 
     except Exception:
         pass
@@ -1132,10 +1320,14 @@ async def send_ad_to_admin(ad_id):
     text = f"""
 📥 <b>YANGI E'LON</b>
 
-🆔 E'lon ID: <code>#{ad['id']}</code>
+🆔 E'lon ID:
+<code>#{ad['id']}</code>
 
-👤 Foydalanuvchi: {esc(username)}
-🆔 Telegram ID: <code>{ad['telegram_id']}</code>
+👤 Foydalanuvchi:
+{esc(username)}
+
+🆔 Telegram ID:
+<code>{ad['telegram_id']}</code>
 
 📝 <b>Sarlavha:</b>
 {esc(ad['title'])}
@@ -1152,8 +1344,11 @@ async def send_ad_to_admin(ad_id):
 📞 <b>Aloqa:</b>
 {esc(ad['contact'])}
 
-⏰ <b>Tarif:</b> {esc(tariff_name)}
-💰 <b>Summa:</b> {ad['price']:,} so'm
+⏰ <b>Tarif:</b>
+{esc(tariff_name)}
+
+💰 <b>Summa:</b>
+{ad['price']:,} so'm
 """
 
     keyboard = IK(
@@ -1171,45 +1366,64 @@ async def send_ad_to_admin(ad_id):
         ]
     )
 
-    if payment and payment["receipt_file_id"]:
-        await bot.send_photo(
-            ADMIN_ID,
-            payment["receipt_file_id"],
-            caption="💳 <b>TO'LOV CHEKI</b>\n\n" + text,
-            reply_markup=keyboard,
-            parse_mode="HTML",
-        )
-    else:
-        await bot.send_message(
-            ADMIN_ID,
-            text,
-            reply_markup=keyboard,
-            parse_mode="HTML",
+    try:
+        if (
+            payment
+            and payment["receipt_file_id"]
+        ):
+            await bot.send_photo(
+                ADMIN_ID,
+                payment["receipt_file_id"],
+                caption=(
+                    "💳 <b>TO'LOV CHEKI</b>\n\n"
+                    + text
+                ),
+                reply_markup=keyboard,
+                parse_mode="HTML",
+            )
+        else:
+            await bot.send_message(
+                ADMIN_ID,
+                text,
+                reply_markup=keyboard,
+                parse_mode="HTML",
+            )
+
+    except Exception:
+        log.exception(
+            "Adminga e'lon yuborishda xato #%s",
+            ad_id,
         )
 
 
 # ============================================================
-# KANALGA E'LON CHIQARISH
+# CHANNEL POST
 # ============================================================
 
 def build_channel_text(ad):
     text = f"""
 🟢 <b>{esc(ad['title'])}</b>
 
-📍 <b>Manzil:</b> {esc(ad['location'])}
+📍 <b>Manzil:</b>
+{esc(ad['location'])}
 
-💼 <b>Ish:</b> {esc(ad['profession'])}
+💼 <b>Ish:</b>
+{esc(ad['profession'])}
 
 📋 <b>Ma'lumot:</b>
 {esc(ad['conditions'])}
 
-📞 <b>Aloqa:</b> {esc(ad['contact'])}
+📞 <b>Aloqa:</b>
+{esc(ad['contact'])}
 
-🆔 E'lon: <code>#{ad['id']}</code>
+🆔 E'lon:
+<code>#{ad['id']}</code>
 """
 
     if ad["lifetime"]:
-        text += "\n♾ <b>Amal qilish muddati: UMRBOD</b>"
+        text += (
+            "\n♾ <b>Amal qilish muddati: UMRBOD</b>"
+        )
     else:
         text += (
             f"\n⏰ <b>Amal qilish muddati: "
@@ -1220,35 +1434,33 @@ def build_channel_text(ad):
 
 
 async def publish_ad_to_channel(ad):
-    channel_text = build_channel_text(ad)
+    text = build_channel_text(ad)
 
     if ad["image_file_id"]:
         return await bot.send_photo(
             CHANNEL_ID,
             ad["image_file_id"],
-            caption=channel_text,
+            caption=text,
             parse_mode="HTML",
         )
 
-    fallback_text = (
-        "📢 <b>ISH BAZASI</b>\n"
-        "🔎 Ish topish va ishchi topish uchun qulay platforma\n\n"
-        + channel_text
-    )
-
     return await bot.send_message(
         CHANNEL_ID,
-        fallback_text,
+        "📢 <b>ISH BAZASI</b>\n\n" + text,
         parse_mode="HTML",
     )
 
 
 # ============================================================
-# ADMIN TASDIQLASH
+# APPROVE
 # ============================================================
 
-@dp.callback_query(F.data.regexp(r"^approve_\d+$"))
-async def approve_ad(callback: types.CallbackQuery):
+@dp.callback_query(
+    F.data.regexp(r"^approve_\d+$")
+)
+async def approve_ad(
+    callback: types.CallbackQuery,
+):
     if callback.from_user.id != ADMIN_ID:
         await callback.answer(
             "❌ Sizda ruxsat yo'q.",
@@ -1256,7 +1468,10 @@ async def approve_ad(callback: types.CallbackQuery):
         )
         return
 
-    ad_id = int(callback.data.split("_")[1])
+    ad_id = int(
+        callback.data.split("_")[1]
+    )
+
     ad = get_ad(ad_id)
 
     if not ad:
@@ -1275,36 +1490,46 @@ async def approve_ad(callback: types.CallbackQuery):
 
     payment = latest_payment(ad_id)
 
-    # Pullik e'lon uchun chek shart.
     if ad["price"] > 0:
-        if not payment or payment["status"] != "receipt_received":
+        if (
+            not payment
+            or payment["status"]
+            != "receipt_received"
+        ):
             await callback.answer(
                 "❌ To'lov cheki hali kelmagan.",
                 show_alert=True,
             )
             return
 
-        update_payment_status(payment["id"], "approved")
-
+    # MUHIM:
+    # Avval kanalga chiqaramiz.
+    # Faqat muvaffaqiyatli chiqqandan keyin
+    # payment approved qilamiz.
     try:
-        sent = await publish_ad_to_channel(ad)
+        sent = await publish_ad_to_channel(
+            ad
+        )
 
     except Exception:
-        log.exception("Kanalga chiqarishda xato")
+        log.exception(
+            "Kanalga chiqarishda xato #%s",
+            ad_id,
+        )
 
         await callback.answer(
-            "❌ Bot kanalga post yubora olmayapti. "
-            "Bot kanalga admin ekanini va post yuborish/o'chirish huquqlarini tekshiring.",
+            "❌ Kanalga post yuborilmadi. "
+            "Bot kanal admini ekanini tekshiring.",
             show_alert=True,
         )
         return
 
-    # Muddati.
     if ad["lifetime"]:
         expires_at = None
     else:
         expires_at = (
-            now() + timedelta(days=ad["days"])
+            now()
+            + timedelta(days=ad["days"])
         ).isoformat()
 
     with db() as c:
@@ -1323,7 +1548,20 @@ async def approve_ad(callback: types.CallbackQuery):
             ),
         )
 
-    # Admindagi xabarni yangilash.
+        if (
+            payment
+            and payment["status"]
+            == "receipt_received"
+        ):
+            c.execute(
+                """
+                UPDATE payments
+                SET status='approved'
+                WHERE id=?
+                """,
+                (payment["id"],),
+            )
+
     try:
         if callback.message.photo:
             await callback.message.edit_caption(
@@ -1339,15 +1577,20 @@ async def approve_ad(callback: types.CallbackQuery):
                 "E'lon kanalga chiqarildi.",
                 parse_mode="HTML",
             )
+
     except Exception:
         pass
 
-    # Foydalanuvchiga xabar.
     try:
-        link_text = ""
         url = channel_url()
+
+        link_text = ""
+
         if url:
-            link_text = f"\n\n🔗 <a href=\"{url}\">Kanalga o'tish</a>"
+            link_text = (
+                f'\n\n🔗 <a href="{url}">'
+                "Kanalga o'tish</a>"
+            )
 
         await bot.send_message(
             ad["telegram_id"],
@@ -1356,23 +1599,29 @@ async def approve_ad(callback: types.CallbackQuery):
 
 🆔 E'lon: #{ad_id}
 
-📢 E'lon kanalga chiqarildi.{link_text}
+📢 E'lon kanalga chiqarildi.
+{link_text}
 
 Rahmat! ❤️
 """,
             parse_mode="HTML",
         )
+
     except Exception:
         pass
 
-    await callback.answer("✅ E'lon tasdiqlandi!")
+    await callback.answer(
+        "✅ E'lon tasdiqlandi!"
+    )
 
 
 # ============================================================
-# RAD ETISH
+# REJECT
 # ============================================================
 
-@dp.callback_query(F.data.regexp(r"^reject_\d+$"))
+@dp.callback_query(
+    F.data.regexp(r"^reject_\d+$")
+)
 async def reject_ad(
     callback: types.CallbackQuery,
     state: FSMContext,
@@ -1384,7 +1633,10 @@ async def reject_ad(
         )
         return
 
-    ad_id = int(callback.data.split("_")[1])
+    ad_id = int(
+        callback.data.split("_")[1]
+    )
+
     ad = get_ad(ad_id)
 
     if not ad:
@@ -1401,17 +1653,19 @@ async def reject_ad(
         )
         return
 
-    await state.update_data(reject_ad_id=ad_id)
-    await state.set_state(RejectForm.reason)
+    await state.update_data(
+        reject_ad_id=ad_id
+    )
+
+    await state.set_state(
+        RejectForm.reason
+    )
 
     await callback.message.answer(
         f"""
 ❌ <b>#{ad_id} e'lonni rad etish</b>
 
 Rad etish sababini yozing.
-
-Masalan:
-<i>To'lov cheki tasdiqlanmadi.</i>
 """,
         parse_mode="HTML",
     )
@@ -1419,7 +1673,9 @@ Masalan:
     await callback.answer()
 
 
-@dp.message(RejectForm.reason)
+@dp.message(
+    RejectForm.reason
+)
 async def reject_reason(
     message: types.Message,
     state: FSMContext,
@@ -1427,32 +1683,54 @@ async def reject_reason(
     if message.from_user.id != ADMIN_ID:
         return
 
-    reason = (message.text or "").strip()
+    reason = (
+        message.text or ""
+    ).strip()
 
     if not reason:
-        await message.answer("❌ Rad etish sababini yozing.")
+        await message.answer(
+            "❌ Rad etish sababini yozing."
+        )
         return
 
     data = await state.get_data()
-    ad_id = data.get("reject_ad_id")
+
+    ad_id = data.get(
+        "reject_ad_id"
+    )
 
     ad = get_ad(ad_id)
 
     if not ad:
         await state.clear()
-        await message.answer("❌ E'lon topilmadi.")
+
+        await message.answer(
+            "❌ E'lon topilmadi."
+        )
         return
 
-    update_ad_status(ad_id, "rejected")
+    update_ad_status(
+        ad_id,
+        "rejected",
+    )
 
-    payment = latest_payment(ad_id)
+    payment = latest_payment(
+        ad_id
+    )
 
-    if payment and payment["status"] in (
-        "waiting",
-        "paid",
-        "receipt_received",
+    if (
+        payment
+        and payment["status"]
+        in (
+            "waiting",
+            "paid",
+            "receipt_received",
+        )
     ):
-        update_payment_status(payment["id"], "rejected")
+        update_payment_status(
+            payment["id"],
+            "rejected",
+        )
 
     try:
         await bot.send_message(
@@ -1465,29 +1743,41 @@ async def reject_reason(
 📋 <b>Sabab:</b>
 {esc(reason)}
 
-Savollar bo'lsa:
+📞 Admin:
 {esc(ADMIN_CONTACT)}
 """,
             parse_mode="HTML",
         )
+
     except Exception:
         pass
 
     await state.clear()
 
     await message.answer(
-        f"❌ #{ad_id} e'lon rad etildi.\n\n"
-        "Sabab foydalanuvchiga yuborildi.",
+        f"""
+❌ #{ad_id} e'lon rad etildi.
+
+Sabab foydalanuvchiga yuborildi.
+""",
         reply_markup=main_menu(),
     )
 
 
 # ============================================================
-# MENING E'LONLARIM
+# MY ADS
 # ============================================================
 
-@dp.message(F.text == "📋 Mening e'lonlarim")
-async def my_ads(message: types.Message):
+@dp.message(
+    F.text == "📋 Mening e'lonlarim"
+)
+async def my_ads(
+    message: types.Message,
+):
+    register_user(
+        message.from_user
+    )
+
     with db() as c:
         rows = c.execute(
             """
@@ -1497,7 +1787,9 @@ async def my_ads(message: types.Message):
             ORDER BY id DESC
             LIMIT 20
             """,
-            (message.from_user.id,),
+            (
+                message.from_user.id,
+            ),
         ).fetchall()
 
     if not rows:
@@ -1506,7 +1798,9 @@ async def my_ads(message: types.Message):
         )
         return
 
-    text = "📋 <b>MENING E'LONLARIM</b>\n\n"
+    text = (
+        "📋 <b>MENING E'LONLARIM</b>\n\n"
+    )
 
     for ad in rows:
         text += (
@@ -1527,7 +1821,9 @@ async def my_ads(message: types.Message):
 # ============================================================
 
 @dp.message(Command("admin"))
-async def admin_panel(message: types.Message):
+async def admin_panel(
+    message: types.Message,
+):
     if message.from_user.id != ADMIN_ID:
         return
 
@@ -1542,8 +1838,12 @@ Kerakli bo'limni tanlang:
     )
 
 
-@dp.callback_query(F.data == "admin_home")
-async def admin_home(callback: types.CallbackQuery):
+@dp.callback_query(
+    F.data == "admin_home"
+)
+async def admin_home(
+    callback: types.CallbackQuery,
+):
     if callback.from_user.id != ADMIN_ID:
         return
 
@@ -1556,15 +1856,20 @@ Kerakli bo'limni tanlang:
         reply_markup=admin_keyboard(),
         parse_mode="HTML",
     )
+
     await callback.answer()
 
 
 # ============================================================
-# ADMIN STATISTIKA
+# ADMIN STATS
 # ============================================================
 
-@dp.callback_query(F.data == "admin_stats")
-async def admin_stats(callback: types.CallbackQuery):
+@dp.callback_query(
+    F.data == "admin_stats"
+)
+async def admin_stats(
+    callback: types.CallbackQuery,
+):
     if callback.from_user.id != ADMIN_ID:
         return
 
@@ -1578,15 +1883,27 @@ async def admin_stats(callback: types.CallbackQuery):
         ).fetchone()[0]
 
         published = c.execute(
-            "SELECT COUNT(*) FROM ads WHERE status='published'"
+            """
+            SELECT COUNT(*)
+            FROM ads
+            WHERE status='published'
+            """
         ).fetchone()[0]
 
         pending = c.execute(
-            "SELECT COUNT(*) FROM ads WHERE status='pending'"
+            """
+            SELECT COUNT(*)
+            FROM ads
+            WHERE status='pending'
+            """
         ).fetchone()[0]
 
         rejected = c.execute(
-            "SELECT COUNT(*) FROM ads WHERE status='rejected'"
+            """
+            SELECT COUNT(*)
+            FROM ads
+            WHERE status='rejected'
+            """
         ).fetchone()[0]
 
         revenue = c.execute(
@@ -1601,17 +1918,23 @@ async def admin_stats(callback: types.CallbackQuery):
         f"""
 📊 <b>STATISTIKA</b>
 
-👥 Foydalanuvchilar: <b>{users}</b>
+👥 Foydalanuvchilar:
+<b>{users}</b>
 
-📢 Jami e'lonlar: <b>{ads}</b>
+📢 Jami e'lonlar:
+<b>{ads}</b>
 
-✅ Kanalda: <b>{published}</b>
+✅ Kanalda:
+<b>{published}</b>
 
-⏳ Kutilayotgan: <b>{pending}</b>
+⏳ Kutilayotgan:
+<b>{pending}</b>
 
-❌ Rad etilgan: <b>{rejected}</b>
+❌ Rad etilgan:
+<b>{rejected}</b>
 
-💰 Tasdiqlangan tushum: <b>{revenue:,} so'm</b>
+💰 Tasdiqlangan tushum:
+<b>{revenue:,} so'm</b>
 """,
         reply_markup=admin_keyboard(),
         parse_mode="HTML",
@@ -1621,16 +1944,21 @@ async def admin_stats(callback: types.CallbackQuery):
 
 
 # ============================================================
-# ADMIN E'LONLAR
+# ADMIN ADS
 # ============================================================
 
-@dp.callback_query(F.data == "admin_ads")
-async def admin_ads(callback: types.CallbackQuery):
+@dp.callback_query(
+    F.data == "admin_ads"
+)
+async def admin_ads(
+    callback: types.CallbackQuery,
+):
     if callback.from_user.id != ADMIN_ID:
         return
 
     await callback.message.edit_text(
-        "📢 <b>E'LONLAR BOSHQARUVI</b>\n\nBo'limni tanlang:",
+        "📢 <b>E'LONLAR BOSHQARUVI</b>\n\n"
+        "Bo'limni tanlang:",
         reply_markup=admin_ads_filter_keyboard(),
         parse_mode="HTML",
     )
@@ -1639,17 +1967,26 @@ async def admin_ads(callback: types.CallbackQuery):
 
 
 @dp.callback_query(
-    F.data.regexp(r"^admin_list_(pending|published|rejected|expired|deleted)_\d+$")
+    F.data.regexp(
+        r"^admin_list_"
+        r"(pending|published|rejected|expired|deleted|cancelled)"
+        r"_\d+$"
+    )
 )
-async def admin_list_ads(callback: types.CallbackQuery):
+async def admin_list_ads(
+    callback: types.CallbackQuery,
+):
     if callback.from_user.id != ADMIN_ID:
         return
 
     parts = callback.data.split("_")
+
     status = parts[2]
     page = int(parts[3])
 
-    offset = page * ADMIN_PAGE_SIZE
+    offset = (
+        page * ADMIN_PAGE_SIZE
+    )
 
     with db() as c:
         rows = c.execute(
@@ -1660,7 +1997,11 @@ async def admin_list_ads(callback: types.CallbackQuery):
             ORDER BY id DESC
             LIMIT ? OFFSET ?
             """,
-            (status, ADMIN_PAGE_SIZE, offset),
+            (
+                status,
+                ADMIN_PAGE_SIZE,
+                offset,
+            ),
         ).fetchall()
 
         total = c.execute(
@@ -1679,6 +2020,7 @@ async def admin_list_ads(callback: types.CallbackQuery):
             reply_markup=admin_ads_filter_keyboard(),
             parse_mode="HTML",
         )
+
         await callback.answer()
         return
 
@@ -1700,8 +2042,12 @@ async def admin_list_ads(callback: types.CallbackQuery):
             buttons.append(
                 [
                     B(
-                        text=f"🗑 #{ad['id']} o'chirish",
-                        callback_data=f"admin_delete_ad_{ad['id']}",
+                        text=(
+                            f"🗑 #{ad['id']} o'chirish"
+                        ),
+                        callback_data=(
+                            f"admin_delete_ad_{ad['id']}"
+                        ),
                     )
                 ]
             )
@@ -1712,15 +2058,22 @@ async def admin_list_ads(callback: types.CallbackQuery):
         nav.append(
             B(
                 text="⬅️ Oldingi",
-                callback_data=f"admin_list_{status}_{page - 1}",
+                callback_data=(
+                    f"admin_list_{status}_{page - 1}"
+                ),
             )
         )
 
-    if offset + len(rows) < total:
+    if (
+        offset + len(rows)
+        < total
+    ):
         nav.append(
             B(
                 text="Keyingi ➡️",
-                callback_data=f"admin_list_{status}_{page + 1}",
+                callback_data=(
+                    f"admin_list_{status}_{page + 1}"
+                ),
             )
         )
 
@@ -1738,7 +2091,9 @@ async def admin_list_ads(callback: types.CallbackQuery):
 
     await callback.message.edit_text(
         text,
-        reply_markup=IK(inline_keyboard=buttons),
+        reply_markup=IK(
+            inline_keyboard=buttons
+        ),
         parse_mode="HTML",
     )
 
@@ -1746,11 +2101,17 @@ async def admin_list_ads(callback: types.CallbackQuery):
 
 
 # ============================================================
-# ADMIN E'LONNI KANALDAN O'CHIRISH
+# ADMIN DELETE CHANNEL POST
 # ============================================================
 
-@dp.callback_query(F.data.regexp(r"^admin_delete_ad_\d+$"))
-async def admin_delete_ad(callback: types.CallbackQuery):
+@dp.callback_query(
+    F.data.regexp(
+        r"^admin_delete_ad_\d+$"
+    )
+)
+async def admin_delete_ad(
+    callback: types.CallbackQuery,
+):
     if callback.from_user.id != ADMIN_ID:
         await callback.answer(
             "❌ Sizda ruxsat yo'q.",
@@ -1758,7 +2119,10 @@ async def admin_delete_ad(callback: types.CallbackQuery):
         )
         return
 
-    ad_id = int(callback.data.split("_")[-1])
+    ad_id = int(
+        callback.data.split("_")[-1]
+    )
+
     ad = get_ad(ad_id)
 
     if not ad:
@@ -1770,37 +2134,38 @@ async def admin_delete_ad(callback: types.CallbackQuery):
 
     if ad["status"] != "published":
         await callback.answer(
-            "⚠️ Bu e'lon hozir kanal statusida emas.",
+            "⚠️ Bu e'lon kanal statusida emas.",
             show_alert=True,
         )
         return
-
-    delete_error = None
 
     try:
         if ad["channel_message_id"]:
             await bot.delete_message(
                 chat_id=CHANNEL_ID,
-                message_id=ad["channel_message_id"],
+                message_id=ad[
+                    "channel_message_id"
+                ],
             )
+
     except Exception as e:
-        delete_error = str(e)
         log.warning(
-            "Admin kanal postini o'chirishda xato #%s: %s",
+            "Postni o'chirish xatosi #%s: %s",
             ad_id,
             e,
         )
 
-    # Telegramda o'chirish muvaffaqiyatli bo'lmasa ham,
-    # statusni o'zboshimchalik bilan deleted qilmaymiz.
-    if delete_error:
         await callback.answer(
-            "❌ Kanal postini o'chirib bo'lmadi. Botning admin huquqlarini tekshiring.",
+            "❌ Kanal postini o'chirib bo'lmadi. "
+            "Botga kanal admin huquqini bering.",
             show_alert=True,
         )
         return
 
-    update_ad_status(ad_id, "deleted")
+    update_ad_status(
+        ad_id,
+        "deleted",
+    )
 
     try:
         await bot.send_message(
@@ -1818,69 +2183,28 @@ Admin tomonidan o'chirildi.
         pass
 
     await callback.answer(
-        "✅ E'lon kanaldan o'chirildi.",
+        "✅ E'lon o'chirildi.",
         show_alert=True,
     )
 
-    # Ro'yxatni yangilash.
-    with db() as c:
-        rows = c.execute(
-            """
-            SELECT *
-            FROM ads
-            WHERE status='published'
-            ORDER BY id DESC
-            LIMIT ?
-            """,
-            (ADMIN_PAGE_SIZE,),
-        ).fetchall()
-
-        total = c.execute(
-            "SELECT COUNT(*) FROM ads WHERE status='published'"
-        ).fetchone()[0]
-
-    if not rows:
-        await callback.message.edit_text(
-            "📢 <b>✅ Kanalda</b>\n\nHozircha e'lon yo'q.",
-            reply_markup=admin_ads_filter_keyboard(),
-            parse_mode="HTML",
-        )
-        return
-
-    text = f"📢 <b>✅ Kanalda</b>\n\nJami: <b>{total}</b>\n\n"
-    buttons = []
-
-    for item in rows:
-        text += (
-            f"🆔 <b>#{item['id']}</b> — {esc(item['title'])}\n"
-            f"📍 {esc(item['location'])}\n\n"
-        )
-        buttons.append(
-            [
-                B(
-                    text=f"🗑 #{item['id']} o'chirish",
-                    callback_data=f"admin_delete_ad_{item['id']}",
-                )
-            ]
-        )
-
-    buttons.append(
-        [B(text="⬅️ E'lonlar bo'limi", callback_data="admin_ads")]
-    )
-
     await callback.message.edit_text(
-        text,
-        reply_markup=IK(inline_keyboard=buttons),
+        "✅ <b>E'lon kanalidan o'chirildi.</b>\n\n"
+        "E'lonlar bo'limiga qaytish:",
+        reply_markup=admin_ads_filter_keyboard(),
         parse_mode="HTML",
     )
 
 
 # ============================================================
-# ADMIN TO'LOVLAR
+# ADMIN PAYMENTS
 # ============================================================
 
-@dp.callback_query(F.data == "admin_payments")
-async def admin_payments(callback: types.CallbackQuery):
+@dp.callback_query(
+    F.data == "admin_payments"
+)
+async def admin_payments(
+    callback: types.CallbackQuery,
+):
     if callback.from_user.id != ADMIN_ID:
         return
 
@@ -1897,7 +2221,10 @@ async def admin_payments(callback: types.CallbackQuery):
             """
             SELECT COUNT(*)
             FROM payments
-            WHERE status IN ('paid', 'receipt_received')
+            WHERE status IN (
+                'paid',
+                'receipt_received'
+            )
             """
         ).fetchone()[0]
 
@@ -1906,15 +2233,27 @@ async def admin_payments(callback: types.CallbackQuery):
         ).fetchone()[0]
 
         approved = c.execute(
-            "SELECT COUNT(*) FROM payments WHERE status='approved'"
+            """
+            SELECT COUNT(*)
+            FROM payments
+            WHERE status='approved'
+            """
         ).fetchone()[0]
 
         rejected = c.execute(
-            "SELECT COUNT(*) FROM payments WHERE status='rejected'"
+            """
+            SELECT COUNT(*)
+            FROM payments
+            WHERE status='rejected'
+            """
         ).fetchone()[0]
 
         expired = c.execute(
-            "SELECT COUNT(*) FROM payments WHERE status='expired'"
+            """
+            SELECT COUNT(*)
+            FROM payments
+            WHERE status='expired'
+            """
         ).fetchone()[0]
 
     await callback.message.edit_text(
@@ -1927,7 +2266,7 @@ async def admin_payments(callback: types.CallbackQuery):
 📸 Tekshirilayotgan:
 <b>{waiting}</b>
 
-✅ Tasdiqlangan to'lovlar:
+✅ Tasdiqlangan:
 <b>{approved}</b>
 
 ❌ Rad etilgan:
@@ -1936,11 +2275,8 @@ async def admin_payments(callback: types.CallbackQuery):
 ⌛ Muddati tugagan:
 <b>{expired}</b>
 
-🧾 Jami to'lovlar:
+🧾 Jami:
 <b>{all_payments}</b>
-
-To'lov cheki kelganda admin chatida
-avtomatik tekshirish uchun chiqadi.
 """,
         reply_markup=admin_keyboard(),
         parse_mode="HTML",
@@ -1950,11 +2286,15 @@ avtomatik tekshirish uchun chiqadi.
 
 
 # ============================================================
-# ADMIN FOYDALANUVCHILAR
+# ADMIN USERS
 # ============================================================
 
-@dp.callback_query(F.data == "admin_users")
-async def admin_users(callback: types.CallbackQuery):
+@dp.callback_query(
+    F.data == "admin_users"
+)
+async def admin_users(
+    callback: types.CallbackQuery,
+):
     if callback.from_user.id != ADMIN_ID:
         return
 
@@ -1983,13 +2323,13 @@ async def admin_users(callback: types.CallbackQuery):
         f"""
 👥 <b>FOYDALANUVCHILAR</b>
 
-Jami foydalanuvchilar:
+Jami:
 <b>{total}</b>
 
-Hozir kanalda turgan e'lonlar:
+📢 Kanalda turgan e'lonlar:
 <b>{active_ads}</b>
 
-🚫 Bloklangan foydalanuvchilar:
+🚫 Bloklangan:
 <b>{blocked}</b>
 """,
         reply_markup=admin_keyboard(),
@@ -2003,7 +2343,9 @@ Hozir kanalda turgan e'lonlar:
 # BROADCAST
 # ============================================================
 
-@dp.callback_query(F.data == "admin_broadcast")
+@dp.callback_query(
+    F.data == "admin_broadcast"
+)
 async def start_broadcast(
     callback: types.CallbackQuery,
     state: FSMContext,
@@ -2011,7 +2353,9 @@ async def start_broadcast(
     if callback.from_user.id != ADMIN_ID:
         return
 
-    await state.set_state(BroadcastForm.message)
+    await state.set_state(
+        BroadcastForm.message
+    )
 
     await callback.message.answer(
         """
@@ -2028,7 +2372,9 @@ Bekor qilish:
     await callback.answer()
 
 
-@dp.message(BroadcastForm.message)
+@dp.message(
+    BroadcastForm.message
+)
 async def broadcast_message(
     message: types.Message,
     state: FSMContext,
@@ -2038,14 +2384,19 @@ async def broadcast_message(
 
     if message.text == "/cancel":
         await state.clear()
-        await message.answer("❌ Bekor qilindi.")
+
+        await message.answer(
+            "❌ Bekor qilindi."
+        )
         return
 
-    text_to_send = message.text or ""
+    text_to_send = (
+        message.text or ""
+    ).strip()
 
     if not text_to_send:
         await message.answer(
-            "❌ Faqat matnli xabar yuboring yoki /cancel bosing."
+            "❌ Matn yuboring yoki /cancel bosing."
         )
         return
 
@@ -2067,10 +2418,26 @@ async def broadcast_message(
                 user["telegram_id"],
                 text_to_send,
             )
+
             success += 1
 
-        except Exception:
+        except Exception as e:
             failed += 1
+
+            # Foydalanuvchi botni bloklagan bo'lsa,
+            # keyingi broadcastlarda o'tkazib yuboramiz.
+            if "blocked" in str(e).lower():
+                with db() as c:
+                    c.execute(
+                        """
+                        UPDATE users
+                        SET blocked=1
+                        WHERE telegram_id=?
+                        """,
+                        (
+                            user["telegram_id"],
+                        ),
+                    )
 
         await asyncio.sleep(0.05)
 
@@ -2080,12 +2447,14 @@ async def broadcast_message(
         f"""
 ✅ <b>Xabar yuborildi!</b>
 
-📨 Yetkazildi: {success}
+📨 Yetkazildi:
+<b>{success}</b>
 
-❌ Yetkazilmadi: {failed}
+❌ Yetkazilmadi:
+<b>{failed}</b>
 """,
-        parse_mode="HTML",
         reply_markup=main_menu(),
+        parse_mode="HTML",
     )
 
 
@@ -2093,7 +2462,9 @@ async def broadcast_message(
 # CANCEL
 # ============================================================
 
-@dp.message(Command("cancel"))
+@dp.message(
+    Command("cancel")
+)
 async def cancel(
     message: types.Message,
     state: FSMContext,
@@ -2107,15 +2478,18 @@ async def cancel(
 
 
 # ============================================================
-# AVTOMATIK MUDDAT NAZORATI
+# EXPIRATION WORKER
 # ============================================================
 
 async def expiration_worker():
     while True:
         try:
+            current_time = now().isoformat()
+
             # ------------------------------------------------
-            # Muddati tugagan e'lonlar
+            # EXPIRED ADS
             # ------------------------------------------------
+
             with db() as c:
                 expired_ads = c.execute(
                     """
@@ -2126,46 +2500,57 @@ async def expiration_worker():
                       AND expires_at IS NOT NULL
                       AND expires_at <= ?
                     """,
-                    (now().isoformat(),),
+                    (current_time,),
                 ).fetchall()
 
             for ad in expired_ads:
+                deleted = False
+
                 try:
                     if ad["channel_message_id"]:
                         await bot.delete_message(
                             chat_id=CHANNEL_ID,
-                            message_id=ad["channel_message_id"],
+                            message_id=ad[
+                                "channel_message_id"
+                            ],
                         )
+
+                    deleted = True
+
                 except Exception as e:
                     log.warning(
-                        "E'lonni avtomatik o'chirish xatosi #%s: %s",
+                        "Avtomatik delete xatosi #%s: %s",
                         ad["id"],
                         e,
                     )
 
-                update_ad_status(ad["id"], "expired")
+                # Faqat post Telegramdan o'chirilganidan
+                # keyin expired qilamiz.
+                if deleted:
+                    update_ad_status(
+                        ad["id"],
+                        "expired",
+                    )
 
-                try:
-                    await bot.send_message(
-                        ad["telegram_id"],
-                        f"""
+                    try:
+                        await bot.send_message(
+                            ad["telegram_id"],
+                            f"""
 ⌛ <b>E'loningizning muddati tugadi.</b>
 
 🆔 E'lon: #{ad['id']}
 
 E'lon kanaldan avtomatik olib tashlandi.
 """,
-                        parse_mode="HTML",
-                    )
-                except Exception:
-                    pass
+                            parse_mode="HTML",
+                        )
+                    except Exception:
+                        pass
 
             # ------------------------------------------------
-            # Muddati o'tgan to'lovlar
-            # waiting va paid holatlari.
-            # receipt_received esa chek kelgan hisoblanadi
-            # va admin uni ko'rib chiqadi.
+            # EXPIRED PAYMENTS
             # ------------------------------------------------
+
             with db() as c:
                 expired_payments = c.execute(
                     """
@@ -2174,7 +2559,7 @@ E'lon kanaldan avtomatik olib tashlandi.
                     WHERE status IN ('waiting', 'paid')
                       AND expires_at <= ?
                     """,
-                    (now().isoformat(),),
+                    (current_time,),
                 ).fetchall()
 
             for payment in expired_payments:
@@ -2183,9 +2568,15 @@ E'lon kanaldan avtomatik olib tashlandi.
                     "expired",
                 )
 
-                ad = get_ad(payment["ad_id"])
+                ad = get_ad(
+                    payment["ad_id"]
+                )
 
-                if ad and ad["status"] == "pending":
+                if (
+                    ad
+                    and ad["status"]
+                    == "pending"
+                ):
                     update_ad_status(
                         payment["ad_id"],
                         "cancelled",
@@ -2208,7 +2599,9 @@ e'lon bekor qilindi.
                     pass
 
         except Exception:
-            log.exception("Expiration worker xatosi")
+            log.exception(
+                "Expiration worker xatosi"
+            )
 
         await asyncio.sleep(30)
 
@@ -2220,7 +2613,7 @@ e'lon bekor qilindi.
 async def main():
     init_db()
 
-    # Eski webhook bo'lsa olib tashlaydi.
+    # Railway'da eski webhook bo'lsa olib tashlaydi.
     await bot.delete_webhook(
         drop_pending_updates=True
     )
@@ -2230,8 +2623,20 @@ async def main():
     )
 
     try:
-        log.info("Bot ishga tushmoqda...")
-        await dp.start_polling(bot)
+        log.info(
+            "================================"
+        )
+        log.info(
+            "ISH BAZASI BOT ISHGA TUSHMOQDA"
+        )
+        log.info(
+            "================================"
+        )
+
+        await dp.start_polling(
+            bot,
+            allowed_updates=dp.resolve_used_update_types(),
+        )
 
     finally:
         worker.cancel()
