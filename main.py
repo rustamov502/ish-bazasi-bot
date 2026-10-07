@@ -25,6 +25,7 @@ from aiogram.types import (
 TOKEN = os.getenv("BOT_TOKEN")
 
 ADMIN_ID = int(os.getenv("ADMIN_ID", "8451295149"))
+
 ADMIN_CONTACT = os.getenv(
     "ADMIN_CONTACT",
     "@rustamovvvll"
@@ -580,22 +581,23 @@ def main_menu():
 
 def subscription_keyboard():
 
+    # FAQAT 2 TA LINK:
+    # Telegram + Instagram
+    # Pastida esa obunani tekshirish.
     return IK(
         inline_keyboard=[
             [
                 B(
-                    text="📢 Telegram kanalga obuna bo'lish — SHART!",
+                    text="📢 Telegram",
                     url=(
                         f"https://t.me/"
                         f"{REQUIRED_CHANNEL.lstrip('@')}"
                     ),
-                )
-            ],
-            [
+                ),
                 B(
-                    text="📸 Instagramga obuna bo'lish — SHART!",
+                    text="📸 Instagram",
                     url=INSTAGRAM_URL,
-                )
+                ),
             ],
             [
                 B(
@@ -640,12 +642,11 @@ async def show_subscription(
     text = """
 👋 <b>ISH BAZASI</b> botiga xush kelibsiz!
 
-Botdan foydalanish uchun quyidagi sahifalarga obuna bo'ling.
+Botdan foydalanish uchun
+Telegram kanalga obuna bo'lishingiz kerak.
 
 📢 Telegram — <b>MAJBURIY</b>
-📸 Instagram — <b>MAJBURIY KO'RSATILADI</b>
-
-⚠️ Instagram obunasi bot tomonidan tekshirilmaydi.
+📸 Instagram — <b>kanalimiz</b>
 
 Telegram kanalga obuna bo'lgach:
 
@@ -927,6 +928,10 @@ async def start(
         message.from_user
     )
 
+    # MUHIM:
+    # Start bosilganda karta/to'lov ko'rsatilmaydi.
+    # Avval majburiy Telegram obunasi tekshiriladi.
+
     if not await telegram_subscribed(
         message.from_user.id
     ):
@@ -948,6 +953,10 @@ shu bot orqali e'lon bering.
         parse_mode="HTML",
     )
 
+
+# ============================================================
+# CHECK SUBSCRIPTION
+# ============================================================
 
 @dp.callback_query(
     F.data == "check_subscription"
@@ -3461,8 +3470,8 @@ async def scheduler_loop():
                 ):
                     continue
 
-                # Eski postni o'chiramiz.
-                # Yangi post kanalga yuqoriga chiqadi.
+                # Eski e'lon o'chadi.
+                # Yangi e'lon kanalga chiqadi.
 
                 await delete_ad_posts(
                     ad["id"]
