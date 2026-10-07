@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+    <title>Ish Bazasi</title>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #f4f6f8);
+            color: var(--tg-theme-text-color, #111827);
+        }
+
+        button {
+            font: inherit;
+        }
+
+        .app {
+            max-width: 600px;
+            margin: auto;
+            min-height: 100vh;
+            padding-bottom: 90px;
+        }
+
+        .header {
+            padding: 20px 16px 12px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 25px;
+            font-weight: 800;
+        }
+
+        .brand p {
+            margin: 5px 0 0;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #1677ff, #6c5ce7);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 20px;
+        }
+
+        .hero {
+            margin: 8px 16px 18px;
+            padding: 22px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, #1677ff, #5b4be7);
+            color: white;
+            box-shadow: 0 10px 30px rgba(30, 90, 220, .20);
+        }
+
+        .hero h2 {
+            margin: 0 0 8px;
+            font-size: 23px;
+        }
+
+        .hero p {
+            margin: 0;
+            line-height: 1.5;
+            opacity: .92;
+            font-size: 14px;
+        }
+
+        .hero-btn {
+            margin-top: 16px;
+            width: 100%;
+            border: 0;
+            border-radius: 15px;
+            padding: 14px;
+            background: white;
+            color: #1558d6;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .section {
+            padding: 0 16px;
+            margin-top: 20px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .section-title h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .section-title span {
+            font-size: 12px;
+            color: #7b8494;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 11px;
+        }
+
+        .menu-card {
+            border: 0;
+            background: var(--tg-theme-secondary-bg-color, #ffffff);
+            border-radius: 19px;
+            padding: 17px 14px;
+            text-align: left;
+            cursor: pointer;
+            box-shadow: 0 3px 12px rgba(0,0,0,.05);
+        }
+
+        .menu-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+            margin-bottom: 11px;
+            background: #eef4ff;
+        }
+
+        .menu-card strong {
+            display: block;
+            font-size: 14px;
+        }
+
+        .menu-card small {
+            display: block;
+            margin-top: 4px;
+            color: #7b8494;
+            font-size: 11px;
+        }
+
+        .tariff {
+            background: var(--tg-theme-secondary-bg-color, #ffffff);
+            border-radius: 19px;
+            padding: 17px;
+            margin-bottom: 11px;
+            box-shadow: 0 3px 12px rgba(0,0,0,.05);
+            border: 1px solid rgba(0,0,0,.04);
+        }
+
+        .tariff-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .tariff-name {
+            font-weight: 800;
+            font-size: 15px;
+        }
+
+        .tariff-price {
+            font-weight: 900;
+            color: #1769e8;
+            white-space: nowrap;
+        }
+
+        .tariff-info {
+            color: #727b89;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-top: 8px;
+        }
+
+        .ads-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ad-card {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: var(--tg-theme-secondary-bg-color, #ffffff);
+            padding: 12px;
+            border-radius: 18px;
+            cursor: pointer;
+            box-shadow: 0 3px 12px rgba(0,0,0,.05);
+        }
+
+        .ad-image {
+            width: 62px;
+            height: 62px;
+            border-radius: 14px;
+            object-fit: cover;
+            background: #e9edf2;
+            flex-shrink: 0;
+        }
+
+        .ad-info {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .ad-title {
+            font-weight: 800;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ad-line {
+            color: #747d8c;
+            font-size: 11px;
+            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ad-arrow {
+            color: #9aa2af;
+            font-size: 20px;
+        }
+
+        .empty {
+            padding: 30px 15px;
+            text-align: center;
+            color: #7b8494;
+            background: var(--tg-theme-secondary-bg-color, #fff);
+            border-radius: 18px;
+        }
+
+        .admin-card {
+            background: var(--tg-theme-secondary-bg-color, #fff);
+            border-radius: 19px;
+            padding: 16px;
+            margin-bottom: 10px;
+        }
+
+        .admin-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .status {
+            padding: 5px 9px;
+            border-radius: 9px;
+            background: #eef4ff;
+            color: #1769e8;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .bottom {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+            background: var(--tg-theme-bg-color, #f4f6f8);
+            border-top: 1px solid rgba(0,0,0,.07);
+        }
+
+        .bottom-inner {
+            max-width: 600px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+            gap: 5px;
+        }
+
+        .nav-btn {
+            border: 0;
+            background: transparent;
+            color: #7b8494;
+            padding: 8px 4px;
+            border-radius: 13px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .nav-btn.active {
+            color: #1769e8;
+            background: #eaf2ff;
+            font-weight: 800;
+        }
+
+        .nav-icon {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 35px;
+            color: #7b8494;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .back-btn {
+            border: 0;
+            background: transparent;
+            padding: 8px 0;
+            color: #1769e8;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .notice {
+            background: #fff8df;
+            border-radius: 15px;
+            padding: 13px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #725900;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 380px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h2 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <header class="header">
+        <div class="brand">
+            <div>
+                <h1>💼 Ish Bazasi</h1>
+                <p>Ish beruvchilar uchun zamonaviy e'lon platformasi</p>
+            </div>
+
+            <div class="avatar">IB</div>
+        </div>
+    </header>
+
+    <!-- HOME -->
+    <section id="home">
+
+        <div class="hero">
+            <h2>E'loningizni kanalga chiqaring 🚀</h2>
+            <p>
+                Ishchi qidiryapsizmi? E'loningizni tez va chiroyli
+                ko'rinishda Ish Bazasi kanaliga joylashtiring.
+            </p>
+
+            <button class="hero-btn" id="heroCreate">
+                ➕ E'lon berish
+            </button>
+        </div>
+
+        <div class="section">
+
+            <div class="section-title">
+                <h3>Asosiy xizmatlar</h3>
+            </div>
+
+            <div class="grid">
+
+                <button class="menu-card" id="createBtn">
+                    <div class="menu-icon">📢</div>
+                    <strong>E'lon berish</strong>
+                    <small>Yangi e'lon joylash</small>
+                </button>
+
+                <button class="menu-card" id="adsBtn">
+                    <div class="menu-icon">📋</div>
+                    <strong>E'lonlar</strong>
+                    <small>Kanal e'lonlarini ko'rish</small>
+                </button>
+
+                <button class="menu-card" id="tariffsBtn">
+                    <div class="menu-icon">💰</div>
+                    <strong>Tariflar</strong>
+                    <small>Joylashtirish narxlari</small>
+                </button>
+
+                <button class="menu-card" id="channelBtn">
+                    <div class="menu-icon">📣</div>
+                    <strong>Kanal</strong>
+                    <small>Ish Bazasi kanaliga o'tish</small>
+                </button>
+
+            </div>
+        </div>
+
+        <div class="section">
+
+            <div class="section-title">
+                <h3>Faol e'lonlar</h3>
+                <span id="adsCount">Yuklanmoqda...</span>
+            </div>
+
+            <div id="homeAds" class="ads-list">
+                <div class="loader">Yuklanmoqda...</div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ADS -->
+    <section id="adsPage" class="hidden">
+
+        <div class="section">
+
+            <button class="back-btn" onclick="showPage('home')">
+                ← Bosh sahifa
+            </button>
+
+            <div class="section-title">
+                <h3>📢 E'lonlar</h3>
+                <span>Faol e'lonlar</span>
+            </div>
+
+            <div class="notice">
+                E'lon ustiga bossangiz, kanalimizdagi aynan shu e'lon postiga o'tasiz.
+            </div>
+
+            <div id="allAds" class="ads-list">
+                <div class="loader">Yuklanmoqda...</div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- TARIFFS -->
+    <section id="tariffsPage" class="hidden">
+
+        <div class="section">
+
+            <button class="back-btn" onclick="showPage('home')">
+                ← Bosh sahifa
+            </button>
+
+            <div class="section-title">
+                <h3>💰 Tariflar</h3>
+            </div>
+
+            <div class="notice">
+                E'lon tasdiqlangandan keyin tanlangan tarif bo'yicha
+                kanalga avtomatik ravishda qayta joylashtiriladi.
+                Eski post o'chiriladi, yangi post chiqadi.
+            </div>
+
+            <div id="tariffsList">
+                <div class="loader">Tariflar yuklanmoqda...</div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ADMIN -->
+    <section id="adminPage" class="hidden">
+
+        <div class="section">
+
+            <button class="back-btn" onclick="showPage('home')">
+                ← Bosh sahifa
+            </button>
+
+            <div class="section-title">
+                <h3>👑 Admin panel</h3>
+                <span>Faqat admin</span>
+            </div>
+
+            <div class="notice">
+                Bu bo'lim faqat bot administratoriga ko'rinadi.
+            </div>
+
+            <div id="adminList">
+                <div class="loader">Tekshirilmoqda...</div>
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom">
+    <div class="bottom-inner">
+
+        <button class="nav-btn active" id="navHome">
+            <span class="nav-icon">🏠</span>
+            Bosh sahifa
+        </button>
+
+        <button class="nav-btn" id="navAds">
+            <span class="nav-icon">📢</span>
+            E'lonlar
+        </button>
+
+        <button class="nav-btn" id="navTariffs">
+            <span class="nav-icon">💰</span>
+            Tariflar
+        </button>
+
+    </div>
+</div>
+
+
+<script>
+    const tg = window.Telegram && window.Telegram.WebApp
+        ? window.Telegram.WebApp
+        : null;
+
+    if (tg) {
+        tg.ready();
+        tg.expand();
+        tg.enableClosingConfirmation();
+    }
+
+    let config = {};
+    let ads = [];
+
+    function formatMoney(value) {
+        return Number(value || 0).toLocaleString("uz-UZ") + " so'm";
+    }
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return "";
+
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function showPage(page) {
+
+        const pages = [
+            "home",
+            "adsPage",
+            "tariffsPage",
+            "adminPage"
+        ];
+
+        pages.forEach(id => {
+            document.getElementById(id).classList.add("hidden");
+        });
+
+        document.getElementById(page).classList.remove("hidden");
+
+        document.querySelectorAll(".nav-btn").forEach(btn => {
+            btn.classList.remove("active");
+        });
+
+        if (page === "home") {
+            document.getElementById("navHome").classList.add("active");
+        }
+
+        if (page === "adsPage") {
+            document.getElementById("navAds").classList.add("active");
+        }
+
+        if (page === "tariffsPage") {
+            document.getElementById("navTariffs").classList.add("active");
+        }
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
+
+
+    /*
+       MUHIM:
+       "E'lon berish" Mini App ichida formani ochmaydi.
+
+       U Telegram chatiga qaytadi va
+       main.py dagi:
+
+       @dp.message(F.web_app_data)
+
+       handlerini ishga tushiradi.
+
+       Shuning uchun kelishganimizdek:
+       E'lon berish -> oddiy Telegram chat -> savollar ketma-ketligi.
+    */
+    function createAd() {
+
+        if (!tg) {
+            alert("Mini App Telegram ichida ochilishi kerak.");
+            return;
+        }
+
+        tg.sendData(JSON.stringify({
+            action: "new_ad"
+        }));
+
+        setTimeout(() => {
+            tg.close();
+        }, 250);
+    }
+
+
+    function renderAd(ad) {
+
+        const image = ad.image_file_id
+            ? `/api/image?id=${encodeURIComponent(ad.id)}`
+            : "";
+
+        const imageHtml = image
+            ? `<img class="ad-image" src="${image}" alt="">`
+            : `<div class="ad-image"></div>`;
+
+        const title = escapeHtml(ad.title || "Nomsiz e'lon");
+        const location = escapeHtml(ad.location || "Manzil ko'rsatilmagan");
+        const profession = escapeHtml(ad.profession || "Ish turi ko'rsatilmagan");
+
+        return `
+            <div class="ad-card"
+                 onclick="openAd('${escapeHtml(ad.channel_message_url || "")}')">
+
+                ${imageHtml}
+
+                <div class="ad-info">
+
+                    <div class="ad-title">
+                        ${title}
+                    </div>
+
+                    <div class="ad-line">
+                        📍 ${location}
+                    </div>
+
+                    <div class="ad-line">
+                        🛠 ${profession}
+                    </div>
+
+                    <div class="ad-line">
+                        📢 ${Number(ad.posts_done || 0)}
+                        / ${Number(ad.total_posts || 0)} joylashuv
+                    </div>
+
+                </div>
+
+                <div class="ad-arrow">
+                    ›
+                </div>
+
+            </div>
+        `;
+    }
+
+
+    function openAd(url) {
+
+        if (!url) {
+            return;
+        }
+
+        if (tg && tg.openTelegramLink) {
+            tg.openTelegramLink(url);
+        } else {
+            window.open(url, "_blank");
+        }
+    }
+
+
+    function renderAds() {
+
+        const home = document.getElementById("homeAds");
+        const all = document.getElementById("allAds");
+        const count = document.getElementById("adsCount");
+
+        count.textContent = `${ads.length} ta`;
+
+        if (!ads.length) {
+
+            const empty = `
+                <div class="empty">
+                    📭 Hozircha faol e'lonlar yo'q.
+                </div>
+            `;
+
+            home.innerHTML = empty;
+            all.innerHTML = empty;
+
+            return;
+        }
+
+        const html = ads.map(renderAd).join("");
+
+        home.innerHTML = html;
+        all.innerHTML = html;
+    }
+
+
+    async function loadAds() {
+
+        try {
+
+            const response = await fetch("/api/ads", {
+                cache: "no-store"
+            });
+
+            if (!response.ok) {
+                throw new Error("Ads API error");
+            }
+
+            ads = await response.json();
+
+            renderAds();
+
+        } catch (error) {
+
+            console.error(error);
+
+            document.getElementById("homeAds").innerHTML = `
+                <div class="empty">
+                    ❌ E'lonlarni yuklashda xato yuz berdi.
+                </div>
+            `;
+
+            document.getElementById("allAds").innerHTML = `
+                <div class="empty">
+                    ❌ E'lonlarni yuklashda xato yuz berdi.
+                </div>
+            `;
+        }
+    }
+
+
+    async function loadConfig() {
+
+        try {
+
+            const response = await fetch("/api/config", {
+                cache: "no-store"
+            });
+
+            if (!response.ok) {
+                throw new Error("Config API error");
+            }
+
+            config = await response.json();
+
+            renderTariffs();
+
+        } catch (error) {
+
+            console.error(error);
+
+            document.getElementById("tariffsList").innerHTML = `
+                <div class="empty">
+                    ❌ Tariflarni yuklab bo'lmadi.
+                </div>
+            `;
+        }
+    }
+
+
+    function renderTariffs() {
+
+        const box = document.getElementById("tariffsList");
+
+        const keys = Object.keys(config);
+
+        if (!keys.length) {
+
+            box.innerHTML = `
+                <div class="empty">
+                    Tariflar mavjud emas.
+                </div>
+            `;
+
+            return;
+        }
+
+        box.innerHTML = keys.map(key => {
+
+            const item = config[key];
+
+            const duration = Number(item.duration_hours || 0);
+            const posts = Number(item.posts || 0);
+            const interval = Number(item.interval_hours || 0);
+
+            let durationText = "";
+
+            if (duration === 24) {
+                durationText = "1 kun";
+            } else if (duration === 72) {
+                durationText = "3 kun";
+            } else if (duration === 168) {
+                durationText = "7 kun";
+            } else {
+                durationText = `${duration} soat`;
+            }
+
+            return `
+                <div class="tariff">
+
+                    <div class="tariff-top">
+
+                        <div class="tariff-name">
+                            ${escapeHtml(item.label)}
+                        </div>
+
+                        <div class="tariff-price">
+                            ${formatMoney(item.price)}
+                        </div>
+
+                    </div>
+
+                    <div class="tariff-info">
+                        ⏱ Muddat: <b>${durationText}</b><br>
+                        📢 Jami joylashuv: <b>${posts} marta</b><br>
+                        🔄 Har bir joylashuv: <b>${interval} soat</b>
+                    </div>
+
+                </div>
+            `;
+
+        }).join("");
+    }
+
+
+    async function loadAdmin() {
+
+        const box = document.getElementById("adminList");
+
+        if (!tg || !tg.initData) {
+
+            box.innerHTML = `
+                <div class="empty">
+                    🔒 Admin ma'lumotlarini tekshirib bo'lmadi.
+                </div>
+            `;
+
+            return;
+        }
+
+        try {
+
+            const response = await fetch("/api/admin", {
+                method: "GET",
+                headers: {
+                    "X-Telegram-Init-Data": tg.initData
+                },
+                cache: "no-store"
+            });
+
+            if (response.status === 403) {
+
+                box.innerHTML = `
+                    <div class="empty">
+                        🔒 Bu bo'lim faqat admin uchun.
+                    </div>
+                `;
+
+                return;
+            }
+
+            if (response.status === 401) {
+
+                box.innerHTML = `
+                    <div class="empty">
+                        🔒 Telegram tasdiqlash ma'lumotlari topilmadi.
+                    </div>
+                `;
+
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error("Admin API error");
+            }
+
+            const rows = await response.json();
+
+            if (!rows.length) {
+
+                box.innerHTML = `
+                    <div class="empty">
+                        📭 E'lonlar topilmadi.
+                    </div>
+                `;
+
+                return;
+            }
+
+            box.innerHTML = rows.map(row => {
+
+                const next = row.next_at
+                    ? new Date(row.next_at).toLocaleString("uz-UZ")
+                    : "—";
+
+                const expires = row.expires_at
+                    ? new Date(row.expires_at).toLocaleString("uz-UZ")
+                    : "—";
+
+                return `
+                    <div class="admin-card">
+
+                        <div class="admin-row">
+                            <strong>
+                                #${row.id}
+                                ${escapeHtml(row.title || "")}
+                            </strong>
+
+                            <span class="status">
+                                ${escapeHtml(row.status || "")}
+                            </span>
+                        </div>
+
+                        <div class="admin-row">
+                            <span>💰 Narx</span>
+                            <b>${formatMoney(row.price)}</b>
+                        </div>
+
+                        <div class="admin-row">
+                            <span>📢 Joylashuv</span>
+                            <b>
+                                ${row.posts_done || 0}
+                                /
+                                ${row.total_posts || 0}
+                            </b>
+                        </div>
+
+                        <div class="admin-row">
+                            <span>⏭ Keyingi</span>
+                            <span>${next}</span>
+                        </div>
+
+                        <div class="admin-row">
+                            <span>⏰ Tugaydi</span>
+                            <span>${expires}</span>
+                        </div>
+
+                    </div>
+                `;
+
+            }).join("");
+
+        } catch (error) {
+
+            console.error(error);
+
+            box.innerHTML = `
+                <div class="empty">
+                    ❌ Admin ma'lumotlarini yuklashda xato.
+                </div>
+            `;
+        }
+    }
+
+
+    /*
+       Tugmalar
+    */
+
+    document.getElementById("heroCreate")
+        .addEventListener("click", createAd);
+
+    document.getElementById("createBtn")
+        .addEventListener("click", createAd);
+
+    document.getElementById("adsBtn")
+        .addEventListener("click", () => {
+            showPage("adsPage");
+            loadAds();
+        });
+
+    document.getElementById("tariffsBtn")
+        .addEventListener("click", () => {
+            showPage("tariffsPage");
+            loadConfig();
+        });
+
+    document.getElementById("channelBtn")
+        .addEventListener("click", () => {
+            const url = "https://t.me/Ishbazasi";
+
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(url);
+            } else {
+                window.open(url, "_blank");
+            }
+        });
+
+    document.getElementById("navHome")
+        .addEventListener("click", () => {
+            showPage("home");
+        });
+
+    document.getElementById("navAds")
+        .addEventListener("click", () => {
+            showPage("adsPage");
+            loadAds();
+        });
+
+    document.getElementById("navTariffs")
+        .addEventListener("click", () => {
+            showPage("tariffsPage");
+            loadConfig();
+        });
+
+
+    /*
+       Admin panel:
+       URLga ?admin=1 yozib ochish shart emas.
+
+       Backend /api/admin 403 qaytarsa,
+       oddiy foydalanuvchi admin ma'lumotini ko'ra olmaydi.
+
+       Telegram initData bilan tekshiriladi.
+    */
+
+    async function checkAdminVisibility() {
+
+        if (!tg || !tg.initData) {
+            return;
+        }
+
+        try {
+
+            const response = await fetch("/api/admin", {
+                headers: {
+                    "X-Telegram-Init-Data": tg.initData
+                },
+                cache: "no-store"
+            });
+
+            if (response.ok) {
+
+                const button = document.createElement("button");
+
+                button.className = "menu-card";
+
+                button.innerHTML = `
+                    <div class="menu-icon">👑</div>
+                    <strong>Admin panel</strong>
+                    <small>Boshqaruv</small>
+                `;
+
+                button.addEventListener("click", () => {
+                    showPage("adminPage");
+                    loadAdmin();
+                });
+
+                document.querySelector(".grid").appendChild(button);
+            }
+
+        } catch (error) {
+            console.log("Admin check:", error);
+        }
+    }
+
+
+    /*
+       Dastlabki yuklanish
+    */
+
+    loadAds();
+    loadConfig();
+    checkAdminVisibility();
+
+</script>
+
+</body>
+</html>
