@@ -17,6 +17,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup as RK,
 )
 
+
 # ============================================================
 # ISH BAZASI BOT — YAKUNIY VERSIYA
 # ============================================================
@@ -24,39 +25,72 @@ from aiogram.types import (
 TOKEN = os.getenv("BOT_TOKEN")
 
 ADMIN_ID = int(os.getenv("ADMIN_ID", "8451295149"))
-ADMIN_CONTACT = os.getenv("ADMIN_CONTACT", "@rustamovvvll")
+ADMIN_CONTACT = os.getenv(
+    "ADMIN_CONTACT",
+    "@rustamovvvll"
+)
 
-CHANNEL_ID = os.getenv("CHANNEL_ID", "@Ishbazasi")
-REQUIRED_CHANNEL = os.getenv("REQUIRED_CHANNEL", "@Ishbazasi")
+CHANNEL_ID = os.getenv(
+    "CHANNEL_ID",
+    "@Ishbazasi"
+)
+
+REQUIRED_CHANNEL = os.getenv(
+    "REQUIRED_CHANNEL",
+    "@Ishbazasi"
+)
 
 INSTAGRAM_URL = os.getenv(
     "INSTAGRAM_URL",
     "https://instagram.com/ishbazasi"
 )
 
-CARD_NUMBER = os.getenv("CARD_NUMBER", "")
+CARD_NUMBER = os.getenv(
+    "CARD_NUMBER",
+    ""
+)
+
 CARD_HOLDER = os.getenv(
     "CARD_HOLDER",
     "Diyorbek Rustamov"
 )
 
-DB_PATH = os.getenv("DB_PATH", "bot.db")
+DB_PATH = os.getenv(
+    "DB_PATH",
+    "bot.db"
+)
 
 RECEIPT_MINUTES = int(
-    os.getenv("RECEIPT_MINUTES", "10")
+    os.getenv(
+        "RECEIPT_MINUTES",
+        "10"
+    )
 )
+
 
 if not TOKEN:
     raise RuntimeError(
         "BOT_TOKEN topilmadi. Railway Variables ga BOT_TOKEN kiriting."
     )
 
+
+# ============================================================
+# LOGGING
+# ============================================================
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
-log = logging.getLogger("ishbazasi")
+log = logging.getLogger(
+    "ishbazasi"
+)
+
+
+# ============================================================
+# BOT
+# ============================================================
 
 bot = Bot(TOKEN)
 
@@ -78,6 +112,7 @@ DEFAULT_TARIFFS = {
         "price": 22000,
         "vip": 0,
     },
+
     2: {
         "name": "1 kun — 4 MARTA",
         "days": 1,
@@ -86,6 +121,7 @@ DEFAULT_TARIFFS = {
         "price": 45000,
         "vip": 0,
     },
+
     3: {
         "name": "3 kun — 6 MARTA",
         "days": 3,
@@ -94,6 +130,7 @@ DEFAULT_TARIFFS = {
         "price": 69000,
         "vip": 0,
     },
+
     4: {
         "name": "VIP — 7 kun, har kuni 2 MARTA",
         "days": 7,
@@ -129,7 +166,9 @@ def db():
 
 
 def now():
-    return datetime.now(timezone.utc)
+    return datetime.now(
+        timezone.utc
+    )
 
 
 def iso(value):
@@ -142,7 +181,9 @@ def dt(value):
     if not value:
         return None
 
-    return datetime.fromisoformat(value)
+    return datetime.fromisoformat(
+        value
+    )
 
 
 def esc(value):
@@ -171,10 +212,16 @@ def channel_url():
     username = channel_username()
 
     if username:
-        return f"https://t.me/{username}"
+        return (
+            f"https://t.me/{username}"
+        )
 
     return ""
 
+
+# ============================================================
+# DATABASE INIT
+# ============================================================
 
 def init_db():
 
@@ -308,7 +355,6 @@ def init_db():
 
                 ON CONFLICT(id)
                 DO UPDATE SET
-
                     name=excluded.name,
                     days=excluded.days,
                     posts=excluded.posts,
@@ -329,12 +375,14 @@ def init_db():
 
 
 # ============================================================
-# DATABASE FUNKSIYALAR
+# DATABASE FUNCTIONS
 # ============================================================
 
 def register_user(user: types.User):
 
-    current_time = iso(now())
+    current_time = iso(
+        now()
+    )
 
     with db() as c:
 
@@ -351,7 +399,6 @@ def register_user(user: types.User):
 
             ON CONFLICT(telegram_id)
             DO UPDATE SET
-
                 username=excluded.username,
                 first_name=excluded.first_name,
                 last_seen=excluded.last_seen
@@ -366,7 +413,9 @@ def register_user(user: types.User):
         )
 
 
-def get_user_db_id(telegram_id):
+def get_user_db_id(
+    telegram_id
+):
 
     with db() as c:
 
@@ -376,7 +425,9 @@ def get_user_db_id(telegram_id):
             FROM users
             WHERE telegram_id=?
             """,
-            (telegram_id,),
+            (
+                telegram_id,
+            ),
         ).fetchone()
 
         if row:
@@ -395,7 +446,9 @@ def get_ad(ad_id):
             FROM ads
             WHERE id=?
             """,
-            (ad_id,),
+            (
+                ad_id,
+            ),
         ).fetchone()
 
 
@@ -409,7 +462,9 @@ def get_payment(payment_id):
             FROM payments
             WHERE id=?
             """,
-            (payment_id,),
+            (
+                payment_id,
+            ),
         ).fetchone()
 
 
@@ -425,7 +480,9 @@ def latest_payment(ad_id):
             ORDER BY id DESC
             LIMIT 1
             """,
-            (ad_id,),
+            (
+                ad_id,
+            ),
         ).fetchone()
 
 
@@ -464,9 +521,7 @@ def update_tariff_price(
         c.execute(
             """
             UPDATE tariff_settings
-
             SET price=?
-
             WHERE id=?
             """,
             (
@@ -492,7 +547,7 @@ def status_text(status):
 
 
 # ============================================================
-# FOYDALANUVCHI MENYUSI
+# USER MENU
 # ============================================================
 
 def main_menu():
@@ -520,14 +575,13 @@ def main_menu():
 
 
 # ============================================================
-# OBUNA
+# SUBSCRIPTION
 # ============================================================
 
 def subscription_keyboard():
 
     return IK(
         inline_keyboard=[
-
             [
                 B(
                     text="📢 Telegram kanalga obuna bo'lish — SHART!",
@@ -537,14 +591,12 @@ def subscription_keyboard():
                     ),
                 )
             ],
-
             [
                 B(
                     text="📸 Instagramga obuna bo'lish — SHART!",
                     url=INSTAGRAM_URL,
                 )
             ],
-
             [
                 B(
                     text="✅ Obunani tekshirish",
@@ -581,7 +633,9 @@ async def telegram_subscribed(
         return False
 
 
-async def show_subscription(target):
+async def show_subscription(
+    target
+):
 
     text = """
 👋 <b>ISH BAZASI</b> botiga xush kelibsiz!
@@ -638,14 +692,13 @@ async def ensure_subscription(
 
 
 # ============================================================
-# ADMIN MENYUSI
+# ADMIN MENU
 # ============================================================
 
 def admin_keyboard():
 
     return IK(
         inline_keyboard=[
-
             [
                 B(
                     text="📊 Statistika",
@@ -656,7 +709,6 @@ def admin_keyboard():
                     callback_data="admin_ads",
                 ),
             ],
-
             [
                 B(
                     text="💳 To'lovlar",
@@ -667,7 +719,6 @@ def admin_keyboard():
                     callback_data="admin_users",
                 ),
             ],
-
             [
                 B(
                     text="💰 Tariflar",
@@ -780,7 +831,6 @@ def admin_tariff_keyboard():
 
     return IK(
         inline_keyboard=[
-
             [
                 B(
                     text=(
@@ -789,7 +839,6 @@ def admin_tariff_keyboard():
                     ),
                     callback_data="edit_tariff_1",
                 ),
-
                 B(
                     text=(
                         f"2️⃣ "
@@ -798,7 +847,6 @@ def admin_tariff_keyboard():
                     callback_data="edit_tariff_2",
                 ),
             ],
-
             [
                 B(
                     text=(
@@ -807,7 +855,6 @@ def admin_tariff_keyboard():
                     ),
                     callback_data="edit_tariff_3",
                 ),
-
                 B(
                     text=(
                         f"4️⃣ "
@@ -816,7 +863,6 @@ def admin_tariff_keyboard():
                     callback_data="edit_tariff_4",
                 ),
             ],
-
             [
                 B(
                     text="⬅️ Admin panel",
@@ -964,7 +1010,7 @@ async def admin_contact(
 
 
 # ============================================================
-# MENING E'LONLARIM
+# MY ADS
 # ============================================================
 
 @dp.message(
@@ -985,11 +1031,8 @@ async def my_ads(
             """
             SELECT *
             FROM ads
-
             WHERE telegram_id=?
-
             ORDER BY id DESC
-
             LIMIT 20
             """,
             (
@@ -1018,8 +1061,7 @@ async def my_ads(
 
 {status_text(ad['status'])}
 
-🔄 {ad['repeats_done']}/"
-            f"{ad['repeats_total']} marta
+🔄 {ad['repeats_done']}/{ad['repeats_total']} marta
 """
         )
 
@@ -1030,7 +1072,7 @@ async def my_ads(
 
 
 # ============================================================
-# E'LON BOSHLASH
+# START AD
 # ============================================================
 
 @dp.message(
@@ -1272,7 +1314,7 @@ Admin keyin rasm qo'yadi.
 
 
 # ============================================================
-# RASM
+# IMAGE
 # ============================================================
 
 @dp.message(
@@ -1346,7 +1388,7 @@ Yoki:
 
 
 # ============================================================
-# E'LON YARATISH
+# CREATE AD
 # ============================================================
 
 def create_ad(
@@ -1382,7 +1424,6 @@ def create_ad(
                 status,
                 created_at
             )
-
             VALUES(
                 ?, ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, 0, ?, 0, ?,
@@ -1398,14 +1439,11 @@ def create_ad(
                 data["conditions"],
                 data["contact"],
                 data.get("image_file_id"),
-
                 tariff_data["id"],
                 tariff_data["days"],
                 tariff_data["price"],
-
                 tariff_data["posts"],
                 tariff_data["interval_hours"],
-
                 iso(now()),
             ),
         )
@@ -1439,7 +1477,6 @@ def create_payment(
                 expires_at,
                 created_at
             )
-
             VALUES(
                 ?, ?, ?, 'waiting', ?, ?
             )
@@ -1457,7 +1494,7 @@ def create_payment(
 
 
 # ============================================================
-# TARIF TANLASH
+# CHOOSE TARIFF
 # ============================================================
 
 @dp.callback_query(
@@ -1564,7 +1601,7 @@ tugmasini bosing.
 
 
 # ============================================================
-# TO'LOV QILDIM
+# PAID
 # ============================================================
 
 @dp.callback_query(
@@ -1611,9 +1648,15 @@ async def paid(
 
         return
 
-    if dt(
+    expires_at = dt(
         payment["expires_at"]
-    ) < now():
+    )
+
+    if (
+        expires_at
+        and
+        expires_at < now()
+    ):
 
         with db() as c:
 
@@ -1623,7 +1666,9 @@ async def paid(
                 SET status='expired'
                 WHERE id=?
                 """,
-                (payment_id,),
+                (
+                    payment_id,
+                ),
             )
 
             c.execute(
@@ -1654,7 +1699,9 @@ async def paid(
             SET status='paid'
             WHERE id=?
             """,
-            (payment_id,),
+            (
+                payment_id,
+            ),
         )
 
     await state.update_data(
@@ -1681,7 +1728,7 @@ async def paid(
 
 
 # ============================================================
-# CHEK QABUL QILISH
+# RECEIVE RECEIPT
 # ============================================================
 
 @dp.message(
@@ -1698,6 +1745,16 @@ async def receive_receipt(
     payment_id = data.get(
         "payment_id"
     )
+
+    if not payment_id:
+
+        await state.clear()
+
+        await message.answer(
+            "❌ To'lov topilmadi."
+        )
+
+        return
 
     payment = get_payment(
         payment_id
@@ -1718,9 +1775,15 @@ async def receive_receipt(
 
         return
 
-    if dt(
+    expires_at = dt(
         payment["expires_at"]
-    ) < now():
+    )
+
+    if (
+        expires_at
+        and
+        expires_at < now()
+    ):
 
         with db() as c:
 
@@ -1730,7 +1793,9 @@ async def receive_receipt(
                 SET status='expired'
                 WHERE id=?
                 """,
-                (payment_id,),
+                (
+                    payment_id,
+                ),
             )
 
             c.execute(
@@ -1761,10 +1826,8 @@ async def receive_receipt(
         c.execute(
             """
             UPDATE payments
-
             SET receipt_file_id=?,
                 status='receipt_received'
-
             WHERE id=?
             """,
             (
@@ -1807,7 +1870,7 @@ async def receipt_not_photo(
 
 
 # ============================================================
-# ADMINGA E'LON YUBORISH
+# ADMIN AD TEXT
 # ============================================================
 
 def admin_ad_text(ad):
@@ -1844,8 +1907,11 @@ def admin_ad_text(ad):
 
     receipt_text = (
         "yuborilgan"
-        if payment
-        and payment["receipt_file_id"]
+        if (
+            payment
+            and
+            payment["receipt_file_id"]
+        )
         else
         "yo'q"
     )
@@ -1911,8 +1977,7 @@ async def send_ad_to_admin(
             payment["receipt_file_id"],
             caption=(
                 "💳 <b>TO'LOV CHEKI</b>\n\n"
-                +
-                text
+                + text
             ),
             reply_markup=keyboard,
             parse_mode="HTML",
@@ -1939,7 +2004,7 @@ async def send_ad_to_admin(
 
 
 # ============================================================
-# KANAL POSTI
+# CHANNEL POST
 # ============================================================
 
 def build_channel_text(ad):
@@ -2034,13 +2099,13 @@ async def publish_ad(
         c.execute(
             """
             UPDATE ads
-
             SET repeats_done =
                 repeats_done + 1
-
             WHERE id=?
             """,
-            (ad_id,),
+            (
+                ad_id,
+            ),
         )
 
     return sent
@@ -2058,7 +2123,9 @@ async def delete_ad_posts(
             FROM ad_posts
             WHERE ad_id=?
             """,
-            (ad_id,),
+            (
+                ad_id,
+            ),
         ).fetchall()
 
     for row in rows:
@@ -2085,12 +2152,14 @@ async def delete_ad_posts(
             DELETE FROM ad_posts
             WHERE ad_id=?
             """,
-            (ad_id,),
+            (
+                ad_id,
+            ),
         )
 
 
 # ============================================================
-# ADMIN RASM QO'YISH
+# ADMIN IMAGE
 # ============================================================
 
 @dp.callback_query(
@@ -2189,10 +2258,8 @@ async def admin_receive_image(
         c.execute(
             """
             UPDATE ads
-
             SET image_file_id=?,
                 status='pending'
-
             WHERE id=?
             """,
             (
@@ -2231,7 +2298,7 @@ async def admin_wrong_image(
 
 
 # ============================================================
-# E'LONNI TASDIQLASH
+# APPROVE AD
 # ============================================================
 
 @dp.callback_query(
@@ -2272,9 +2339,7 @@ async def approve_ad(
 
         return
 
-    if ad["status"] not in (
-        "pending",
-    ):
+    if ad["status"] != "pending":
 
         await callback.answer(
             "⚠️ Bu e'lon allaqachon ko'rib chiqilgan.",
@@ -2308,9 +2373,7 @@ async def approve_ad(
             c.execute(
                 """
                 UPDATE payments
-
                 SET status='approved'
-
                 WHERE id=?
                 """,
                 (
@@ -2331,12 +2394,7 @@ async def approve_ad(
         )
 
         await callback.answer(
-            """
-❌ Kanalga yuborib bo'lmadi.
-
-Bot kanalga ADMIN ekanini
-tekshiring.
-""",
+            "❌ Kanalga yuborib bo'lmadi. Bot kanalga ADMIN ekanini tekshiring.",
             show_alert=True,
         )
 
@@ -2389,11 +2447,9 @@ tekshiring.
         c.execute(
             """
             UPDATE ads
-
             SET status='published',
                 expires_at=?,
                 next_post_at=?
-
             WHERE id=?
             """,
             (
@@ -2466,7 +2522,7 @@ E'lon kanalga chiqarildi.
 
 
 # ============================================================
-# RAD ETISH
+# REJECT
 # ============================================================
 
 @dp.callback_query(
@@ -2537,9 +2593,7 @@ async def reject_reason(
             c.execute(
                 """
                 UPDATE ads
-
                 SET status='rejected'
-
                 WHERE id=?
                 """,
                 (
@@ -2600,6 +2654,7 @@ async def admin_home(
         callback.from_user.id
         != ADMIN_ID
     ):
+
         return await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
@@ -2615,7 +2670,7 @@ async def admin_home(
 
 
 # ============================================================
-# STATISTIKA
+# STATISTICS
 # ============================================================
 
 @dp.callback_query(
@@ -2629,6 +2684,7 @@ async def admin_stats(
         callback.from_user.id
         != ADMIN_ID
     ):
+
         return await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
@@ -2664,9 +2720,7 @@ async def admin_stats(
                 SUM(amount),
                 0
             ) n
-
             FROM payments
-
             WHERE status='approved'
             """
         ).fetchone()["n"]
@@ -2695,7 +2749,7 @@ async def admin_stats(
 
 
 # ============================================================
-# TARIFLAR
+# TARIFFS
 # ============================================================
 
 @dp.callback_query(
@@ -2709,6 +2763,7 @@ async def admin_tariffs(
         callback.from_user.id
         != ADMIN_ID
     ):
+
         return await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
@@ -2716,7 +2771,9 @@ async def admin_tariffs(
 
     ts = get_tariffs()
 
-    text = "💰 <b>TARIFLAR</b>\n\n"
+    text = (
+        "💰 <b>TARIFLAR</b>\n\n"
+    )
 
     for i in range(
         1,
@@ -2753,6 +2810,7 @@ async def edit_tariff(
         callback.from_user.id
         != ADMIN_ID
     ):
+
         return await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
@@ -2765,6 +2823,15 @@ async def edit_tariff(
     selected = get_tariff(
         tariff_id
     )
+
+    if not selected:
+
+        await callback.answer(
+            "❌ Tarif topilmadi.",
+            show_alert=True,
+        )
+
+        return
 
     await state.set_state(
         TariffPriceForm.price
@@ -2853,7 +2920,7 @@ Masalan:
 
 
 # ============================================================
-# E'LONLAR
+# ADS
 # ============================================================
 
 @dp.callback_query(
@@ -2867,6 +2934,7 @@ async def admin_ads(
         callback.from_user.id
         != ADMIN_ID
     ):
+
         return await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
@@ -2925,7 +2993,7 @@ async def admin_ads(
 
 
 # ============================================================
-# TO'LOVLAR
+# PAYMENTS
 # ============================================================
 
 @dp.callback_query(
@@ -2939,6 +3007,7 @@ async def admin_payments(
         callback.from_user.id
         != ADMIN_ID
     ):
+
         return await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
@@ -3011,6 +3080,7 @@ async def payment_view(
         callback.from_user.id
         != ADMIN_ID
     ):
+
         return await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
@@ -3094,6 +3164,7 @@ async def send_receipt(
         callback.from_user.id
         != ADMIN_ID
     ):
+
         return await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
@@ -3126,7 +3197,7 @@ async def send_receipt(
 
 
 # ============================================================
-# FOYDALANUVCHILAR
+# USERS
 # ============================================================
 
 @dp.callback_query(
@@ -3140,6 +3211,7 @@ async def admin_users(
         callback.from_user.id
         != ADMIN_ID
     ):
+
         return await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
@@ -3195,6 +3267,7 @@ async def admin_broadcast(
         callback.from_user.id
         != ADMIN_ID
     ):
+
         return await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
@@ -3290,7 +3363,7 @@ async def broadcast(
 
 
 # ============================================================
-# AVTOMATIK REPOST / O'CHIRISH
+# SCHEDULER
 # ============================================================
 
 async def scheduler_loop():
@@ -3307,11 +3380,8 @@ async def scheduler_loop():
                     """
                     SELECT id, telegram_id
                     FROM ads
-
                     WHERE status='published'
-
                     AND expires_at IS NOT NULL
-
                     AND expires_at <= ?
                     """,
                     (
@@ -3323,13 +3393,9 @@ async def scheduler_loop():
                     """
                     SELECT id
                     FROM ads
-
                     WHERE status='published'
-
                     AND next_post_at IS NOT NULL
-
                     AND next_post_at <= ?
-
                     AND repeats_done < repeats_total
                     """,
                     (
@@ -3337,7 +3403,9 @@ async def scheduler_loop():
                     ),
                 ).fetchall()
 
-            # MUDDATI TUGAGAN E'LONLAR
+            # ------------------------------------------------
+            # EXPIRED ADS
+            # ------------------------------------------------
 
             for ad in expired:
 
@@ -3350,10 +3418,8 @@ async def scheduler_loop():
                     c.execute(
                         """
                         UPDATE ads
-
                         SET status='expired',
                             next_post_at=NULL
-
                         WHERE id=?
                         """,
                         (
@@ -3375,7 +3441,9 @@ async def scheduler_loop():
 
                     pass
 
-            # NAVBATDAGI REPOSTLAR
+            # ------------------------------------------------
+            # DUE REPOSTS
+            # ------------------------------------------------
 
             for row in due:
 
@@ -3400,13 +3468,27 @@ async def scheduler_loop():
                     ad["id"]
                 )
 
-                await publish_ad(
-                    ad["id"]
-                )
+                try:
+
+                    await publish_ad(
+                        ad["id"]
+                    )
+
+                except Exception:
+
+                    log.exception(
+                        "Repost xatosi #%s",
+                        ad["id"]
+                    )
+
+                    continue
 
                 updated = get_ad(
                     ad["id"]
                 )
+
+                if not updated:
+                    continue
 
                 selected = get_tariff(
                     updated["tariff_id"]
@@ -3419,14 +3501,10 @@ async def scheduler_loop():
                 ):
 
                     hours = (
-                        selected[
-                            "interval_hours"
-                        ]
+                        selected["interval_hours"]
                         if selected
                         else
-                        updated[
-                            "interval_hours"
-                        ]
+                        updated["interval_hours"]
                     )
 
                     next_time = (
@@ -3442,9 +3520,7 @@ async def scheduler_loop():
                         c.execute(
                             """
                             UPDATE ads
-
                             SET next_post_at=?
-
                             WHERE id=?
                             """,
                             (
@@ -3460,9 +3536,7 @@ async def scheduler_loop():
                         c.execute(
                             """
                             UPDATE ads
-
                             SET next_post_at=NULL
-
                             WHERE id=?
                             """,
                             (
