@@ -15,11 +15,12 @@ from aiogram.types import (
     InlineKeyboardMarkup as IK,
     KeyboardButton as KB,
     ReplyKeyboardMarkup as RK,
+    WebAppInfo,
 )
 
 
 # ============================================================
-# ISH BAZASI BOT — YAKUNIY VERSIYA
+# ISH BAZASI BOT — FINAL
 # ============================================================
 
 TOKEN = os.getenv("BOT_TOKEN")
@@ -44,6 +45,15 @@ REQUIRED_CHANNEL = os.getenv(
 INSTAGRAM_URL = os.getenv(
     "INSTAGRAM_URL",
     "https://instagram.com/ishbazasi"
+)
+
+# Mini App manzili.
+# Railway Variables ichiga MINI_APP_URL qo'yiladi.
+# Masalan:
+# https://your-mini-app.up.railway.app
+MINI_APP_URL = os.getenv(
+    "MINI_APP_URL",
+    ""
 )
 
 CARD_NUMBER = os.getenv(
@@ -84,9 +94,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
-log = logging.getLogger(
-    "ishbazasi"
-)
+log = logging.getLogger("ishbazasi")
 
 
 # ============================================================
@@ -101,7 +109,7 @@ dp = Dispatcher(
 
 
 # ============================================================
-# TARIFLAR
+# DEFAULT TARIFLAR
 # ============================================================
 
 DEFAULT_TARIFFS = {
@@ -119,7 +127,7 @@ DEFAULT_TARIFFS = {
         "days": 1,
         "posts": 4,
         "interval_hours": 6,
-        "price": 45000,
+        "price": 35000,
         "vip": 0,
     },
 
@@ -133,11 +141,11 @@ DEFAULT_TARIFFS = {
     },
 
     4: {
-        "name": "VIP — 7 kun, har kuni 2 MARTA",
+        "name": "VIP — 7 kun — 3 MARTA",
         "days": 7,
-        "posts": 14,
-        "interval_hours": 12,
-        "price": 149000,
+        "posts": 3,
+        "interval_hours": 72,
+        "price": 159000,
         "vip": 1,
     },
 }
@@ -167,12 +175,13 @@ def db():
 
 
 def now():
-    return datetime.now(
-        timezone.utc
-    )
+    return datetime.now(timezone.utc)
 
 
 def iso(value):
+    if value is None:
+        return None
+
     return value.astimezone(
         timezone.utc
     ).isoformat()
@@ -182,9 +191,10 @@ def dt(value):
     if not value:
         return None
 
-    return datetime.fromisoformat(
-        value
-    )
+    try:
+        return datetime.fromisoformat(value)
+    except Exception:
+        return None
 
 
 def esc(value):
@@ -213,15 +223,13 @@ def channel_url():
     username = channel_username()
 
     if username:
-        return (
-            f"https://t.me/{username}"
-        )
+        return f"https://t.me/{username}"
 
     return ""
 
 
 # ============================================================
-# DATABASE INIT
+# DATABASE INIT + MIGRATION
 # ============================================================
 
 def init_db():
@@ -313,8 +321,12 @@ def init_db():
             """
         )
 
+        # ----------------------------------------------------
+        # ADS MIGRATION
+        # ----------------------------------------------------
+
         existing = {
-            row[1]
+            row["name"]
             for row in c.execute(
                 "PRAGMA table_info(ads)"
             ).fetchall()
@@ -322,9 +334,14 @@ def init_db():
 
         additions = {
             "tariff_id": "INTEGER DEFAULT 1",
+            "days": "INTEGER DEFAULT 1",
+            "price": "INTEGER DEFAULT 0",
+            "lifetime": "INTEGER DEFAULT 0",
             "repeats_total": "INTEGER DEFAULT 1",
             "repeats_done": "INTEGER DEFAULT 0",
             "interval_hours": "INTEGER DEFAULT 12",
+            "status": "TEXT DEFAULT 'pending'",
+            "expires_at": "TEXT",
             "next_post_at": "TEXT",
         }
 
@@ -338,6 +355,38 @@ def init_db():
                     ADD COLUMN {column} {column_type}
                     """
                 )
+
+        # ----------------------------------------------------
+        # PAYMENTS MIGRATION
+        # ----------------------------------------------------
+
+        payment_columns = {
+            row["name"]
+            for row in c.execute(
+                "PRAGMA table_info(payments)"
+            ).fetchall()
+        }
+
+        payment_additions = {
+            "receipt_file_id": "TEXT",
+            "expires_at": "TEXT",
+            "status": "TEXT DEFAULT 'waiting'",
+        }
+
+        for column, column_type in payment_additions.items():
+
+            if column not in payment_columns:
+
+                c.execute(
+                    f"""
+                    ALTER TABLE payments
+                    ADD COLUMN {column} {column_type}
+                    """
+                )
+
+        # ----------------------------------------------------
+        # TARIFLAR
+        # ----------------------------------------------------
 
         for tariff_id, tariff in DEFAULT_TARIFFS.items():
 
@@ -355,13 +404,7 @@ def init_db():
                 VALUES (?, ?, ?, ?, ?, ?, ?)
 
                 ON CONFLICT(id)
-                DO UPDATE SET
-                    name=excluded.name,
-                    days=excluded.days,
-                    posts=excluded.posts,
-                    interval_hours=excluded.interval_hours,
-                    price=excluded.price,
-                    vip=excluded.vip
+                DO NOTHING
                 """,
                 (
                     tariff_id,
@@ -376,14 +419,12 @@ def init_db():
 
 
 # ============================================================
-# DATABASE FUNCTIONS
+# USER
 # ============================================================
 
 def register_user(user: types.User):
 
-    current_time = iso(
-        now()
-    )
+    current_time = iso(now())
 
     with db() as c:
 
@@ -414,9 +455,7 @@ def register_user(user: types.User):
         )
 
 
-def get_user_db_id(
-    telegram_id
-):
+def get_user_db_id(telegram_id):
 
     with db() as c:
 
@@ -426,16 +465,15 @@ def get_user_db_id(
             FROM users
             WHERE telegram_id=?
             """,
-            (
-                telegram_id,
-            ),
+            (telegram_id,),
         ).fetchone()
 
-        if row:
-            return row["id"]
+        return row["id"] if row else None
 
-    return None
 
+# ============================================================
+# DB GETTERS
+# ============================================================
 
 def get_ad(ad_id):
 
@@ -447,9 +485,7 @@ def get_ad(ad_id):
             FROM ads
             WHERE id=?
             """,
-            (
-                ad_id,
-            ),
+            (ad_id,),
         ).fetchone()
 
 
@@ -463,9 +499,7 @@ def get_payment(payment_id):
             FROM payments
             WHERE id=?
             """,
-            (
-                payment_id,
-            ),
+            (payment_id,),
         ).fetchone()
 
 
@@ -481,9 +515,7 @@ def latest_payment(ad_id):
             ORDER BY id DESC
             LIMIT 1
             """,
-            (
-                ad_id,
-            ),
+            (ad_id,),
         ).fetchone()
 
 
@@ -512,39 +544,126 @@ def get_tariff(tariff_id):
     )
 
 
-def update_tariff_price(
+def update_tariff(
     tariff_id,
-    price
+    price=None,
+    posts=None,
+    interval_hours=None,
+    days=None
 ):
+
+    tariff = get_tariff(
+        tariff_id
+    )
+
+    if not tariff:
+        return False
+
+    price = (
+        tariff["price"]
+        if price is None
+        else price
+    )
+
+    posts = (
+        tariff["posts"]
+        if posts is None
+        else posts
+    )
+
+    interval_hours = (
+        tariff["interval_hours"]
+        if interval_hours is None
+        else interval_hours
+    )
+
+    days = (
+        tariff["days"]
+        if days is None
+        else days
+    )
 
     with db() as c:
 
         c.execute(
             """
             UPDATE tariff_settings
-            SET price=?
+            SET price=?,
+                posts=?,
+                interval_hours=?,
+                days=?
             WHERE id=?
             """,
             (
                 price,
+                posts,
+                interval_hours,
+                days,
                 tariff_id,
             ),
         )
+
+    return True
 
 
 def status_text(status):
 
     return {
         "pending": "⏳ Kutilmoqda",
-        "published": "✅ Faol",
+        "published": "🟢 Faol",
         "expired": "⌛ Tugagan",
         "rejected": "❌ Rad etilgan",
-        "deleted": "🗑 O'chirilgan",
         "cancelled": "🚫 Bekor qilingan",
     }.get(
         status,
         status
     )
+
+
+def remaining_text(value):
+
+    target = dt(value)
+
+    if not target:
+        return "—"
+
+    seconds = int(
+        (target - now()).total_seconds()
+    )
+
+    if seconds <= 0:
+        return "0 daqiqa"
+
+    days, remainder = divmod(
+        seconds,
+        86400
+    )
+
+    hours, remainder = divmod(
+        remainder,
+        3600
+    )
+
+    minutes = remainder // 60
+
+    parts = []
+
+    if days:
+        parts.append(
+            f"{days} kun"
+        )
+
+    if hours:
+        parts.append(
+            f"{hours} soat"
+        )
+
+    if minutes:
+        parts.append(
+            f"{minutes} daqiqa"
+        )
+
+    return " ".join(parts) or "<1 daqiqa"
 
 
 # ============================================================
@@ -553,24 +672,31 @@ def status_text(status):
 
 def main_menu():
 
-    return RK(
-        keyboard=[
-            [
-                KB(
-                    text="🚀 E'lon berish"
-                )
-            ],
-            [
-                KB(
-                    text="📋 Mening e'lonlarim"
-                )
-            ],
-            [
-                KB(
-                    text="📞 Admin bilan bog'lanish"
-                )
-            ],
+    keyboard = [
+        [
+            KB(
+                text="🚀 E'lon berish"
+            )
         ],
+        [
+            KB(
+                text="📢 E'lonlarni ko'rish"
+            )
+        ],
+        [
+            KB(
+                text="📞 Admin bilan bog'lanish"
+            )
+        ],
+    ]
+
+    # Foydalanuvchiga "Mening e'lonlarim"
+    # kerak emasligi kelishilgan.
+    #
+    # Admin panel oddiy foydalanuvchi menyusida chiqmaydi.
+
+    return RK(
+        keyboard=keyboard,
         resize_keyboard=True,
     )
 
@@ -581,9 +707,6 @@ def main_menu():
 
 def subscription_keyboard():
 
-    # FAQAT 2 TA LINK:
-    # Telegram + Instagram
-    # Pastida esa obunani tekshirish.
     return IK(
         inline_keyboard=[
             [
@@ -635,9 +758,7 @@ async def telegram_subscribed(
         return False
 
 
-async def show_subscription(
-    target
-):
+async def show_subscription(target):
 
     text = """
 👋 <b>ISH BAZASI</b> botiga xush kelibsiz!
@@ -646,12 +767,11 @@ Botdan foydalanish uchun
 Telegram kanalga obuna bo'lishingiz kerak.
 
 📢 Telegram — <b>MAJBURIY</b>
-📸 Instagram — <b>kanalimiz</b>
+📸 Instagram — kanalimiz
 
-Telegram kanalga obuna bo'lgach:
+Obuna bo'lgach:
 
 <b>✅ Obunani tekshirish</b>
-
 tugmasini bosing.
 """
 
@@ -693,7 +813,37 @@ async def ensure_subscription(
 
 
 # ============================================================
-# ADMIN MENU
+# PUBLIC MINI APP BUTTON
+# ============================================================
+
+def mini_app_button():
+
+    if MINI_APP_URL:
+
+        return B(
+            text="📢 E'lonlarni ko'rish",
+            web_app=WebAppInfo(
+                url=MINI_APP_URL
+            ),
+        )
+
+    channel = channel_url()
+
+    if channel:
+
+        return B(
+            text="📢 E'lonlarni ko'rish",
+            url=channel,
+        )
+
+    return B(
+        text="📢 E'lonlarni ko'rish",
+        callback_data="view_ads_channel",
+    )
+
+
+# ============================================================
+# ADMIN KEYBOARD
 # ============================================================
 
 def admin_keyboard():
@@ -731,6 +881,106 @@ def admin_keyboard():
                 ),
             ],
         ]
+    )
+
+
+def admin_tariff_keyboard():
+
+    tariffs = get_tariffs()
+
+    return IK(
+        inline_keyboard=[
+            [
+                B(
+                    text=(
+                        f"1️⃣ {money(tariffs[1]['price'])}"
+                    ),
+                    callback_data="edit_tariff_1",
+                ),
+                B(
+                    text=(
+                        f"2️⃣ {money(tariffs[2]['price'])}"
+                    ),
+                    callback_data="edit_tariff_2",
+                ),
+            ],
+            [
+                B(
+                    text=(
+                        f"3️⃣ {money(tariffs[3]['price'])}"
+                    ),
+                    callback_data="edit_tariff_3",
+                ),
+                B(
+                    text=(
+                        f"4️⃣ {money(tariffs[4]['price'])}"
+                    ),
+                    callback_data="edit_tariff_4",
+                ),
+            ],
+            [
+                B(
+                    text="⬅️ Admin panel",
+                    callback_data="admin_home",
+                )
+            ],
+        ]
+    )
+
+
+def image_skip_keyboard():
+
+    return IK(
+        inline_keyboard=[
+            [
+                B(
+                    text="⏭ O'tkazib yuborish",
+                    callback_data="skip_image",
+                )
+            ]
+        ]
+    )
+
+
+def tariff_keyboard():
+
+    tariffs = get_tariffs()
+
+    icons = [
+        "🟢",
+        "🔥",
+        "⭐",
+        "👑",
+    ]
+
+    rows = []
+
+    for tariff_id in range(1, 5):
+
+        tariff = tariffs.get(
+            tariff_id
+        )
+
+        if not tariff:
+            continue
+
+        rows.append(
+            [
+                B(
+                    text=(
+                        f"{icons[tariff_id - 1]} "
+                        f"{tariff['name']} — "
+                        f"{money(tariff['price'])} so'm"
+                    ),
+                    callback_data=(
+                        f"tariff_{tariff_id}"
+                    ),
+                )
+            ]
+        )
+
+    return IK(
+        inline_keyboard=rows
     )
 
 
@@ -772,110 +1022,8 @@ def admin_ad_keyboard(
     )
 
 
-def image_skip_keyboard():
-
-    return IK(
-        inline_keyboard=[
-            [
-                B(
-                    text="⏭ O'tkazib yuborish",
-                    callback_data="skip_image",
-                )
-            ]
-        ]
-    )
-
-
-def tariff_keyboard():
-
-    tariffs = get_tariffs()
-
-    icons = [
-        "🟢",
-        "🔥",
-        "⭐",
-        "👑",
-    ]
-
-    rows = []
-
-    for tariff_id in range(
-        1,
-        5
-    ):
-
-        tariff = tariffs[tariff_id]
-
-        rows.append(
-            [
-                B(
-                    text=(
-                        f"{icons[tariff_id - 1]} "
-                        f"{tariff['name']} — "
-                        f"{money(tariff['price'])} so'm"
-                    ),
-                    callback_data=(
-                        f"tariff_{tariff_id}"
-                    ),
-                )
-            ]
-        )
-
-    return IK(
-        inline_keyboard=rows
-    )
-
-
-def admin_tariff_keyboard():
-
-    tariffs = get_tariffs()
-
-    return IK(
-        inline_keyboard=[
-            [
-                B(
-                    text=(
-                        f"1️⃣ "
-                        f"{money(tariffs[1]['price'])} so'm"
-                    ),
-                    callback_data="edit_tariff_1",
-                ),
-                B(
-                    text=(
-                        f"2️⃣ "
-                        f"{money(tariffs[2]['price'])} so'm"
-                    ),
-                    callback_data="edit_tariff_2",
-                ),
-            ],
-            [
-                B(
-                    text=(
-                        f"3️⃣ "
-                        f"{money(tariffs[3]['price'])} so'm"
-                    ),
-                    callback_data="edit_tariff_3",
-                ),
-                B(
-                    text=(
-                        f"4️⃣ "
-                        f"{money(tariffs[4]['price'])} so'm"
-                    ),
-                    callback_data="edit_tariff_4",
-                ),
-            ],
-            [
-                B(
-                    text="⬅️ Admin panel",
-                    callback_data="admin_home",
-                )
-            ],
-        ]
-    )
-
-
 # ============================================================
-# STATES
+# FSM
 # ============================================================
 
 class AdForm(StatesGroup):
@@ -914,9 +1062,7 @@ class TariffPriceForm(StatesGroup):
 # START
 # ============================================================
 
-@dp.message(
-    Command("start")
-)
+@dp.message(Command("start"))
 async def start(
     message: types.Message,
     state: FSMContext
@@ -927,10 +1073,6 @@ async def start(
     register_user(
         message.from_user
     )
-
-    # MUHIM:
-    # Start bosilganda karta/to'lov ko'rsatilmaydi.
-    # Avval majburiy Telegram obunasi tekshiriladi.
 
     if not await telegram_subscribed(
         message.from_user.id
@@ -944,10 +1086,13 @@ async def start(
 
     await message.answer(
         """
-🎉 <b>Xush kelibsiz!</b>
+🎉 <b>ISH BAZASI</b>ga xush kelibsiz!
 
-🚀 Ishchi kerak bo'lsa,
-shu bot orqali e'lon bering.
+👷 Ishchi kerak bo'lsa,
+shu yerning o'zida e'lon bering.
+
+📢 E'lonlarni esa alohida
+ko'rishingiz mumkin.
 """,
         reply_markup=main_menu(),
         parse_mode="HTML",
@@ -970,13 +1115,13 @@ async def check_subscription(
     ):
 
         await callback.answer(
-            "✅ Telegram obunasi tasdiqlandi!",
+            "✅ Obuna tasdiqlandi!",
             show_alert=True,
         )
 
         await callback.message.answer(
             """
-🎉 <b>Obuna tasdiqlandi!</b>
+🎉 <b>Tayyor!</b>
 
 Endi botdan foydalanishingiz mumkin.
 """,
@@ -990,6 +1135,102 @@ Endi botdan foydalanishingiz mumkin.
             "❌ Avval Telegram kanalga obuna bo'ling!",
             show_alert=True,
         )
+
+
+# ============================================================
+# VIEW ADS
+# ============================================================
+
+@dp.message(
+    F.text == "📢 E'lonlarni ko'rish"
+)
+async def view_ads(
+    message: types.Message
+):
+
+    if not await ensure_subscription(
+        message
+    ):
+        return
+
+    if MINI_APP_URL:
+
+        await message.answer(
+            """
+📢 <b>E'lonlar</b>
+
+Quyidagi tugma orqali barcha
+e'lonlarni ko'rishingiz mumkin.
+""",
+            reply_markup=IK(
+                inline_keyboard=[
+                    [
+                        mini_app_button()
+                    ]
+                ]
+            ),
+            parse_mode="HTML",
+        )
+
+        return
+
+    channel = channel_url()
+
+    if channel:
+
+        await message.answer(
+            """
+📢 <b>E'lonlar</b>
+
+Kanalimizdagi barcha e'lonlarni
+ko'rish uchun quyidagi tugmani bosing.
+""",
+            reply_markup=IK(
+                inline_keyboard=[
+                    [
+                        B(
+                            text="📢 E'lonlarni ko'rish",
+                            url=channel,
+                        )
+                    ]
+                ]
+            ),
+            parse_mode="HTML",
+        )
+
+    else:
+
+        await message.answer(
+            "📢 E'lonlarni ko'rish hozircha mavjud emas."
+        )
+
+
+@dp.callback_query(
+    F.data == "view_ads_channel"
+)
+async def view_ads_channel(
+    callback: types.CallbackQuery
+):
+
+    channel = channel_url()
+
+    if channel:
+
+        await callback.message.answer(
+            "📢 Kanalimiz:",
+            reply_markup=IK(
+                inline_keyboard=[
+                    [
+                        B(
+                            text="📢 E'lonlarni ko'rish",
+                            url=channel,
+                        )
+                    ]
+                ]
+            ),
+        )
+
+    await callback.answer()
 
 
 # ============================================================
@@ -1014,68 +1255,6 @@ async def admin_contact(
 
 👨‍💼 Admin: {esc(ADMIN_CONTACT)}
 """,
-        parse_mode="HTML",
-    )
-
-
-# ============================================================
-# MY ADS
-# ============================================================
-
-@dp.message(
-    F.text == "📋 Mening e'lonlarim"
-)
-async def my_ads(
-    message: types.Message
-):
-
-    if not await ensure_subscription(
-        message
-    ):
-        return
-
-    with db() as c:
-
-        rows = c.execute(
-            """
-            SELECT *
-            FROM ads
-            WHERE telegram_id=?
-            ORDER BY id DESC
-            LIMIT 20
-            """,
-            (
-                message.from_user.id,
-            ),
-        ).fetchall()
-
-    if not rows:
-
-        await message.answer(
-            "📋 Sizda hali e'lon yo'q."
-        )
-
-        return
-
-    result = [
-        "📋 <b>Mening e'lonlarim</b>\n"
-    ]
-
-    for ad in rows:
-
-        result.append(
-            f"""
-🆔 #{ad['id']}
-📝 {esc(ad['title'])}
-
-{status_text(ad['status'])}
-
-🔄 {ad['repeats_done']}/{ad['repeats_total']} marta
-"""
-        )
-
-    await message.answer(
-        "\n".join(result),
         parse_mode="HTML",
     )
 
@@ -1109,7 +1288,9 @@ async def start_ad(
 
     await message.answer(
         """
-📝 <b>E'lon sarlavhasini yozing.</b>
+🚀 <b>E'LON BERISH</b>
+
+📝 E'lon sarlavhasini yozing.
 
 Masalan:
 <i>Ofitsiantlar ishga taklif qilinadi</i>
@@ -1118,9 +1299,11 @@ Masalan:
     )
 
 
-@dp.message(
-    AdForm.title
-)
+# ============================================================
+# AD FORM
+# ============================================================
+
+@dp.message(AdForm.title)
 async def ad_title(
     message: types.Message,
     state: FSMContext
@@ -1157,9 +1340,7 @@ Toshkent, Chilonzor
     )
 
 
-@dp.message(
-    AdForm.location
-)
+@dp.message(AdForm.location)
 async def ad_location(
     message: types.Message,
     state: FSMContext
@@ -1198,9 +1379,7 @@ Haydovchi
     )
 
 
-@dp.message(
-    AdForm.profession
-)
+@dp.message(AdForm.profession)
 async def ad_profession(
     message: types.Message,
     state: FSMContext
@@ -1237,9 +1416,7 @@ va boshqa ma'lumotlarni yozing.
     )
 
 
-@dp.message(
-    AdForm.conditions
-)
+@dp.message(AdForm.conditions)
 async def ad_conditions(
     message: types.Message,
     state: FSMContext
@@ -1275,9 +1452,7 @@ Telefon raqami yoki Telegram username.
     )
 
 
-@dp.message(
-    AdForm.contact
-)
+@dp.message(AdForm.contact)
 async def ad_contact(
     message: types.Message,
     state: FSMContext
@@ -1309,13 +1484,11 @@ async def ad_contact(
 
 Rasm yubormoqchi bo'lmasangiz:
 
-<b>⏭ O'tkazib yuborish</b>
+⏭ <b>O'tkazib yuborish</b>
 
 tugmasini bosing.
 
-⚠️ Rasm yubormasangiz,
-e'lon admin paneliga rasmsiz keladi.
-Admin keyin rasm qo'yadi.
+Admin kerak bo'lsa keyin rasm qo'yishi mumkin.
 """,
         reply_markup=image_skip_keyboard(),
         parse_mode="HTML",
@@ -1376,9 +1549,7 @@ async def skip_image(
     await callback.answer()
 
 
-@dp.message(
-    AdForm.image
-)
+@dp.message(AdForm.image)
 async def wrong_image(
     message: types.Message
 ):
@@ -1403,7 +1574,7 @@ Yoki:
 def create_ad(
     telegram_id,
     data,
-    tariff_data
+    tariff
 ):
 
     user_id = get_user_db_id(
@@ -1448,11 +1619,11 @@ def create_ad(
                 data["conditions"],
                 data["contact"],
                 data.get("image_file_id"),
-                tariff_data["id"],
-                tariff_data["days"],
-                tariff_data["price"],
-                tariff_data["posts"],
-                tariff_data["interval_hours"],
+                tariff["id"],
+                tariff["days"],
+                tariff["price"],
+                tariff["posts"],
+                tariff["interval_hours"],
                 iso(now()),
             ),
         )
@@ -1503,14 +1674,12 @@ def create_payment(
 
 
 # ============================================================
-# CHOOSE TARIFF
+# TARIFF CHOICE
 # ============================================================
 
 @dp.callback_query(
     AdForm.tariff,
-    F.data.regexp(
-        r"^tariff_[1-4]$"
-    )
+    F.data.regexp(r"^tariff_[1-4]$")
 )
 async def choose_tariff(
     callback: types.CallbackQuery,
@@ -1521,11 +1690,11 @@ async def choose_tariff(
         callback.data.split("_")[1]
     )
 
-    selected = get_tariff(
+    tariff = get_tariff(
         tariff_id
     )
 
-    if not selected:
+    if not tariff:
 
         await callback.answer(
             "❌ Tarif topilmadi.",
@@ -1534,22 +1703,21 @@ async def choose_tariff(
 
         return
 
+    tariff = dict(tariff)
+    tariff["id"] = tariff_id
+
     data = await state.get_data()
-
-    selected = dict(selected)
-
-    selected["id"] = tariff_id
 
     ad_id = create_ad(
         callback.from_user.id,
         data,
-        selected,
+        tariff,
     )
 
     payment_id = create_payment(
         ad_id,
         callback.from_user.id,
-        selected["price"],
+        tariff["price"],
     )
 
     await state.update_data(
@@ -1564,16 +1732,23 @@ async def choose_tariff(
     card = (
         CARD_NUMBER
         or
-        "Railway Variables → CARD_NUMBER"
+        "CARD_NUMBER sozlanmagan"
     )
 
     await callback.message.edit_text(
         f"""
 💳 <b>TO'LOV</b>
 
-📦 <b>{esc(selected['name'])}</b>
+📦 <b>{esc(tariff['name'])}</b>
 
-💰 <b>{money(selected['price'])} so'm</b>
+🔄 Joylashlar:
+<b>{tariff['posts']} marta</b>
+
+⏱ Interval:
+<b>{tariff['interval_hours']} soat</b>
+
+💰 Narxi:
+<b>{money(tariff['price'])} so'm</b>
 
 💳 Karta:
 <code>{esc(card)}</code>
@@ -1614,9 +1789,7 @@ tugmasini bosing.
 # ============================================================
 
 @dp.callback_query(
-    F.data.regexp(
-        r"^paid_\d+$"
-    )
+    F.data.regexp(r"^paid_\d+$")
 )
 async def paid(
     callback: types.CallbackQuery,
@@ -1657,15 +1830,11 @@ async def paid(
 
         return
 
-    expires_at = dt(
+    expires = dt(
         payment["expires_at"]
     )
 
-    if (
-        expires_at
-        and
-        expires_at < now()
-    ):
+    if expires and expires <= now():
 
         with db() as c:
 
@@ -1675,9 +1844,7 @@ async def paid(
                 SET status='expired'
                 WHERE id=?
                 """,
-                (
-                    payment_id,
-                ),
+                (payment_id,),
             )
 
             c.execute(
@@ -1686,9 +1853,7 @@ async def paid(
                 SET status='cancelled'
                 WHERE id=?
                 """,
-                (
-                    payment["ad_id"],
-                ),
+                (payment["ad_id"],),
             )
 
         await state.clear()
@@ -1708,18 +1873,12 @@ async def paid(
             SET status='paid'
             WHERE id=?
             """,
-            (
-                payment_id,
-            ),
+            (payment_id,),
         )
 
     await state.update_data(
         ad_id=payment["ad_id"],
         payment_id=payment_id,
-    )
-
-    await state.set_state(
-        AdForm.receipt
     )
 
     await callback.message.answer(
@@ -1732,12 +1891,12 @@ async def paid(
     )
 
     await callback.answer(
-        "✅ Endi chekni yuboring."
+        "✅ Chekni yuboring."
     )
 
 
 # ============================================================
-# RECEIVE RECEIPT
+# RECEIPT
 # ============================================================
 
 @dp.message(
@@ -1769,12 +1928,7 @@ async def receive_receipt(
         payment_id
     )
 
-    if (
-        not payment
-        or
-        payment["telegram_id"]
-        != message.from_user.id
-    ):
+    if not payment:
 
         await state.clear()
 
@@ -1784,15 +1938,11 @@ async def receive_receipt(
 
         return
 
-    expires_at = dt(
+    expires = dt(
         payment["expires_at"]
     )
 
-    if (
-        expires_at
-        and
-        expires_at < now()
-    ):
+    if expires and expires <= now():
 
         with db() as c:
 
@@ -1802,9 +1952,7 @@ async def receive_receipt(
                 SET status='expired'
                 WHERE id=?
                 """,
-                (
-                    payment_id,
-                ),
+                (payment_id,),
             )
 
             c.execute(
@@ -1813,9 +1961,7 @@ async def receive_receipt(
                 SET status='cancelled'
                 WHERE id=?
                 """,
-                (
-                    payment["ad_id"],
-                ),
+                (payment["ad_id"],),
             )
 
         await state.clear()
@@ -1865,9 +2011,7 @@ e'lon kanalga chiqariladi.
     )
 
 
-@dp.message(
-    AdForm.receipt
-)
+@dp.message(AdForm.receipt)
 async def receipt_not_photo(
     message: types.Message
 ):
@@ -1879,7 +2023,7 @@ async def receipt_not_photo(
 
 
 # ============================================================
-# ADMIN AD TEXT
+# ADMIN AD
 # ============================================================
 
 def admin_ad_text(ad):
@@ -1888,41 +2032,20 @@ def admin_ad_text(ad):
         ad["id"]
     )
 
-    tariff_data = get_tariff(
+    tariff = get_tariff(
         ad["tariff_id"]
     )
 
-    if tariff_data:
+    tariff_name = (
+        tariff["name"]
+        if tariff
+        else f"{ad['days']} kun"
+    )
 
-        tariff_name = tariff_data[
-            "name"
-        ]
-
-    else:
-
-        tariff_name = (
-            f"{ad['days']} kun"
-        )
-
-    if ad["image_file_id"]:
-
-        image_text = "bor"
-
-    else:
-
-        image_text = (
-            "yo'q — admin qo'yishi mumkin"
-        )
-
-    receipt_text = (
+    receipt = (
         "yuborilgan"
-        if (
-            payment
-            and
-            payment["receipt_file_id"]
-        )
-        else
-        "yo'q"
+        if payment and payment["receipt_file_id"]
+        else "yo'q"
     )
 
     return f"""
@@ -1945,9 +2068,13 @@ def admin_ad_text(ad):
 
 💰 {money(ad['price'])} so'm
 
-🖼 Rasm: {image_text}
+🔄 {ad['repeats_done']}/{ad['repeats_total']} marta
 
-💳 Chek: {receipt_text}
+🖼 Rasm:
+{"bor" if ad["image_file_id"] else "yo'q"}
+
+💳 Chek:
+{receipt}
 """
 
 
@@ -2044,7 +2171,7 @@ def build_channel_text(ad):
 
         text += (
             f'\n🔗 <a href="{telegram_link}">'
-            f'Telegram kanalimiz</a>'
+            f'Kanalga kirish</a>'
         )
 
     text += (
@@ -2066,7 +2193,7 @@ async def publish_ad(
     if not ad:
         return None
 
-    channel_text = build_channel_text(
+    text = build_channel_text(
         ad
     )
 
@@ -2075,7 +2202,7 @@ async def publish_ad(
         sent = await bot.send_photo(
             CHANNEL_ID,
             ad["image_file_id"],
-            caption=channel_text,
+            caption=text,
             parse_mode="HTML",
         )
 
@@ -2083,7 +2210,7 @@ async def publish_ad(
 
         sent = await bot.send_message(
             CHANNEL_ID,
-            channel_text,
+            text,
             parse_mode="HTML",
         )
 
@@ -2108,13 +2235,10 @@ async def publish_ad(
         c.execute(
             """
             UPDATE ads
-            SET repeats_done =
-                repeats_done + 1
+            SET repeats_done=repeats_done + 1
             WHERE id=?
             """,
-            (
-                ad_id,
-            ),
+            (ad_id,),
         )
 
     return sent
@@ -2132,9 +2256,7 @@ async def delete_ad_posts(
             FROM ad_posts
             WHERE ad_id=?
             """,
-            (
-                ad_id,
-            ),
+            (ad_id,),
         ).fetchall()
 
     for row in rows:
@@ -2149,7 +2271,7 @@ async def delete_ad_posts(
         except Exception as e:
 
             log.warning(
-                "Post o'chirish xatosi #%s: %s",
+                "Post delete #%s: %s",
                 ad_id,
                 e,
             )
@@ -2161,9 +2283,7 @@ async def delete_ad_posts(
             DELETE FROM ad_posts
             WHERE ad_id=?
             """,
-            (
-                ad_id,
-            ),
+            (ad_id,),
         )
 
 
@@ -2172,19 +2292,14 @@ async def delete_ad_posts(
 # ============================================================
 
 @dp.callback_query(
-    F.data.regexp(
-        r"^admin_add_image_\d+$"
-    )
+    F.data.regexp(r"^admin_add_image_\d+$")
 )
 async def admin_add_image(
     callback: types.CallbackQuery,
     state: FSMContext
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
         await callback.answer(
             "❌ Ruxsat yo'q.",
@@ -2220,10 +2335,7 @@ async def admin_add_image(
 
     await callback.message.answer(
         f"""
-🖼 <b>#{ad_id}</b> e'lon uchun
-rasmni yuboring.
-
-Bot shu rasmni e'lon rasmi qilib qo'yadi.
+🖼 <b>#{ad_id}</b> e'lon uchun rasm yuboring.
 """,
         parse_mode="HTML",
     )
@@ -2240,10 +2352,7 @@ async def admin_receive_image(
     state: FSMContext
 ):
 
-    if (
-        message.from_user.id
-        != ADMIN_ID
-    ):
+    if message.from_user.id != ADMIN_ID:
         return
 
     data = await state.get_data()
@@ -2267,8 +2376,7 @@ async def admin_receive_image(
         c.execute(
             """
             UPDATE ads
-            SET image_file_id=?,
-                status='pending'
+            SET image_file_id=?
             WHERE id=?
             """,
             (
@@ -2287,16 +2395,13 @@ async def admin_receive_image(
         f"""
 ✅ #{ad_id} e'longa rasm qo'yildi.
 
-Endi <b>✅ Tasdiqlash</b>
-tugmasini bosing.
+Endi tasdiqlashingiz mumkin.
 """,
         parse_mode="HTML",
     )
 
 
-@dp.message(
-    AdminImageForm.image
-)
+@dp.message(AdminImageForm.image)
 async def admin_wrong_image(
     message: types.Message
 ):
@@ -2307,22 +2412,17 @@ async def admin_wrong_image(
 
 
 # ============================================================
-# APPROVE AD
+# APPROVE
 # ============================================================
 
 @dp.callback_query(
-    F.data.regexp(
-        r"^approve_\d+$"
-    )
+    F.data.regexp(r"^approve_\d+$")
 )
 async def approve_ad(
     callback: types.CallbackQuery
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
         await callback.answer(
             "❌ Ruxsat yo'q.",
@@ -2357,11 +2457,11 @@ async def approve_ad(
 
         return
 
-    if ad["price"] > 0:
+    payment = latest_payment(
+        ad_id
+    )
 
-        payment = latest_payment(
-            ad_id
-        )
+    if ad["price"] > 0:
 
         if (
             not payment
@@ -2385,18 +2485,17 @@ async def approve_ad(
                 SET status='approved'
                 WHERE id=?
                 """,
-                (
-                    payment["id"],
-                ),
+                (payment["id"],),
             )
 
+    # Birinchi post darhol chiqadi.
     try:
 
         await publish_ad(
             ad_id
         )
 
-    except Exception:
+    except Exception as e:
 
         log.exception(
             "Kanalga chiqarish xatosi"
@@ -2409,47 +2508,63 @@ async def approve_ad(
 
         return
 
-    selected = get_tariff(
+    tariff = get_tariff(
         ad["tariff_id"]
     )
 
-    if selected:
+    if not tariff:
 
-        expires_at = (
-            now()
-            +
-            timedelta(
-                days=selected["days"]
-            )
+        await callback.answer(
+            "❌ Tarif topilmadi.",
+            show_alert=True,
         )
 
-        if selected["posts"] > 1:
+        return
 
-            next_post_at = (
-                now()
-                +
-                timedelta(
-                    hours=selected[
-                        "interval_hours"
-                    ]
-                )
+    current = now()
+
+    # Muhim:
+    #
+    # 1-post hozir chiqdi.
+    # Keyingi post intervaldan keyin chiqadi.
+    #
+    # Oxirgi post ham o'z intervali tugagach o'chadi.
+    #
+    # Masalan:
+    # 1 kun / 2 marta / 12 soat
+    # 1-post 10:00
+    # 2-post 22:00
+    # 2-post 10:00 ertasi kuni o'chadi.
+    #
+    # Shuning uchun expire vaqtini:
+    # postlar soni * interval
+    # asosida hisoblaymiz.
+
+    final_expire = (
+        current
+        +
+        timedelta(
+            hours=(
+                tariff["posts"]
+                *
+                tariff["interval_hours"]
             )
+        )
+    )
 
-        else:
+    if tariff["posts"] > 1:
 
-            next_post_at = None
+        next_post = (
+            current
+            +
+            timedelta(
+                hours=tariff["interval_hours"]
+            )
+        )
 
     else:
 
-        expires_at = (
-            now()
-            +
-            timedelta(
-                days=1
-            )
-        )
-
-        next_post_at = None
+        next_post = None
 
     with db() as c:
 
@@ -2462,12 +2577,8 @@ async def approve_ad(
             WHERE id=?
             """,
             (
-                iso(expires_at),
-                (
-                    iso(next_post_at)
-                    if next_post_at
-                    else None
-                ),
+                iso(final_expire),
+                iso(next_post),
                 ad_id,
             ),
         )
@@ -2477,35 +2588,25 @@ async def approve_ad(
         if callback.message.photo:
 
             await callback.message.edit_caption(
-                caption="""
-✅ <b>TASDIQLANDI</b>
-
-E'lon kanalga chiqarildi.
-""",
+                caption=(
+                    "✅ <b>TASDIQLANDI</b>\n\n"
+                    "E'lon kanalga chiqarildi."
+                ),
                 parse_mode="HTML",
             )
 
         else:
 
             await callback.message.edit_text(
-                """
-✅ <b>TASDIQLANDI</b>
-
-E'lon kanalga chiqarildi.
-""",
+                (
+                    "✅ <b>TASDIQLANDI</b>\n\n"
+                    "E'lon kanalga chiqarildi."
+                ),
                 parse_mode="HTML",
             )
 
     except Exception:
-
         pass
-
-    tariff_name = (
-        selected["name"]
-        if selected
-        else
-        "Tarif"
-    )
 
     try:
 
@@ -2516,13 +2617,14 @@ E'lon kanalga chiqarildi.
 
 📢 E'lon kanalga chiqarildi.
 
-📦 {esc(tariff_name)}
+📦 {esc(tariff['name'])}
+
+🔄 {tariff['posts']} marta joylanadi.
 """,
             parse_mode="HTML",
         )
 
     except Exception:
-
         pass
 
     await callback.answer(
@@ -2535,19 +2637,14 @@ E'lon kanalga chiqarildi.
 # ============================================================
 
 @dp.callback_query(
-    F.data.regexp(
-        r"^reject_\d+$"
-    )
+    F.data.regexp(r"^reject_\d+$")
 )
 async def reject_ad(
     callback: types.CallbackQuery,
     state: FSMContext
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
         await callback.answer(
             "❌ Ruxsat yo'q.",
@@ -2575,18 +2672,13 @@ async def reject_ad(
     await callback.answer()
 
 
-@dp.message(
-    RejectForm.reason
-)
+@dp.message(RejectForm.reason)
 async def reject_reason(
     message: types.Message,
     state: FSMContext
 ):
 
-    if (
-        message.from_user.id
-        != ADMIN_ID
-    ):
+    if message.from_user.id != ADMIN_ID:
         return
 
     data = await state.get_data()
@@ -2605,21 +2697,39 @@ async def reject_reason(
                 SET status='rejected'
                 WHERE id=?
                 """,
-                (
-                    ad["id"],
-                ),
+                (ad["id"],),
             )
 
-        await bot.send_message(
-            ad["telegram_id"],
-            f"""
+            payment = latest_payment(
+                ad["id"]
+            )
+
+            if payment:
+
+                c.execute(
+                    """
+                    UPDATE payments
+                    SET status='rejected'
+                    WHERE id=?
+                    """,
+                    (payment["id"],),
+                )
+
+        try:
+
+            await bot.send_message(
+                ad["telegram_id"],
+                f"""
 ❌ <b>E'loningiz rad etildi.</b>
 
 Sabab:
 {esc(message.text)}
 """,
-            parse_mode="HTML",
-        )
+                parse_mode="HTML",
+            )
+
+        except Exception:
+            pass
 
     await state.clear()
 
@@ -2632,17 +2742,12 @@ Sabab:
 # ADMIN PANEL
 # ============================================================
 
-@dp.message(
-    Command("admin")
-)
+@dp.message(Command("admin"))
 async def admin_panel(
     message: types.Message
 ):
 
-    if (
-        message.from_user.id
-        != ADMIN_ID
-    ):
+    if message.from_user.id != ADMIN_ID:
         return
 
     await message.answer(
@@ -2659,15 +2764,14 @@ async def admin_home(
     callback: types.CallbackQuery
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
-        return await callback.answer(
+        await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
         )
+
+        return
 
     await callback.message.edit_text(
         "👨‍💼 <b>ADMIN PANEL</b>",
@@ -2679,7 +2783,7 @@ async def admin_home(
 
 
 # ============================================================
-# STATISTICS
+# ADMIN STATS
 # ============================================================
 
 @dp.callback_query(
@@ -2689,15 +2793,14 @@ async def admin_stats(
     callback: types.CallbackQuery
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
-        return await callback.answer(
+        await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
         )
+
+        return
 
     with db() as c:
 
@@ -2723,14 +2826,19 @@ async def admin_stats(
             """
         ).fetchone()["n"]
 
-        approved_money = c.execute(
+        revenue = c.execute(
             """
-            SELECT COALESCE(
-                SUM(amount),
-                0
-            ) n
+            SELECT COALESCE(SUM(amount),0) n
             FROM payments
             WHERE status='approved'
+            """
+        ).fetchone()["n"]
+
+        pending = c.execute(
+            """
+            SELECT COUNT(*) n
+            FROM payments
+            WHERE status='receipt_received'
             """
         ).fetchone()["n"]
 
@@ -2744,11 +2852,14 @@ async def admin_stats(
 📢 Jami e'lonlar:
 <b>{ads}</b>
 
-✅ Faol e'lonlar:
+🟢 Faol e'lonlar:
 <b>{active}</b>
 
-💰 Tasdiqlangan to'lovlar:
-<b>{money(approved_money)} so'm</b>
+⏳ Tekshirilayotgan to'lovlar:
+<b>{pending}</b>
+
+💰 Daromad:
+<b>{money(revenue)} so'm</b>
 """,
         reply_markup=admin_keyboard(),
         parse_mode="HTML",
@@ -2758,7 +2869,7 @@ async def admin_stats(
 
 
 # ============================================================
-# TARIFFS
+# ADMIN TARIFFS
 # ============================================================
 
 @dp.callback_query(
@@ -2768,32 +2879,29 @@ async def admin_tariffs(
     callback: types.CallbackQuery
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
-        return await callback.answer(
+        await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
         )
 
-    ts = get_tariffs()
+        return
 
-    text = (
-        "💰 <b>TARIFLAR</b>\n\n"
-    )
+    tariffs = get_tariffs()
 
-    for i in range(
-        1,
-        5
-    ):
+    text = "💰 <b>TARIFLAR</b>\n\n"
+
+    for i in range(1, 5):
+
+        t = tariffs[i]
 
         text += (
-            f"{i}. "
-            f"{esc(ts[i]['name'])}\n"
-            f"💵 "
-            f"<b>{money(ts[i]['price'])} so'm</b>\n\n"
+            f"{i}. <b>{esc(t['name'])}</b>\n"
+            f"💵 {money(t['price'])} so'm\n"
+            f"🔄 {t['posts']} marta\n"
+            f"⏱ Har {t['interval_hours']} soat\n"
+            f"📅 {t['days']} kun\n\n"
         )
 
     await callback.message.edit_text(
@@ -2806,41 +2914,29 @@ async def admin_tariffs(
 
 
 @dp.callback_query(
-    F.data.regexp(
-        r"^edit_tariff_[1-4]$"
-    )
+    F.data.regexp(r"^edit_tariff_[1-4]$")
 )
 async def edit_tariff(
     callback: types.CallbackQuery,
     state: FSMContext
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
-        return await callback.answer(
+        await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
         )
+
+        return
 
     tariff_id = int(
         callback.data.split("_")[-1]
     )
 
-    selected = get_tariff(
+    tariff = get_tariff(
         tariff_id
     )
-
-    if not selected:
-
-        await callback.answer(
-            "❌ Tarif topilmadi.",
-            show_alert=True,
-        )
-
-        return
 
     await state.set_state(
         TariffPriceForm.price
@@ -2852,10 +2948,10 @@ async def edit_tariff(
 
     await callback.message.answer(
         f"""
-💰 <b>{esc(selected['name'])}</b>
+💰 <b>{esc(tariff['name'])}</b>
 
 Hozirgi narx:
-<b>{money(selected['price'])} so'm</b>
+<b>{money(tariff['price'])} so'm</b>
 
 Yangi narxni faqat raqam bilan yuboring.
 
@@ -2876,10 +2972,7 @@ async def save_tariff_price(
     state: FSMContext
 ):
 
-    if (
-        message.from_user.id
-        != ADMIN_ID
-    ):
+    if message.from_user.id != ADMIN_ID:
         return
 
     try:
@@ -2898,21 +2991,16 @@ async def save_tariff_price(
     except Exception:
 
         await message.answer(
-            """
-❌ Narxni faqat raqam bilan yuboring.
-
-Masalan:
-25000
-"""
+            "❌ Narxni faqat raqam bilan yuboring."
         )
 
         return
 
     data = await state.get_data()
 
-    update_tariff_price(
+    update_tariff(
         data["tariff_id"],
-        price,
+        price=price,
     )
 
     await state.clear()
@@ -2929,7 +3017,7 @@ Masalan:
 
 
 # ============================================================
-# ADS
+# ADMIN ADS
 # ============================================================
 
 @dp.callback_query(
@@ -2939,15 +3027,14 @@ async def admin_ads(
     callback: types.CallbackQuery
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
-        return await callback.answer(
+        await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
         )
+
+        return
 
     with db() as c:
 
@@ -2960,17 +3047,13 @@ async def admin_ads(
             """
         ).fetchall()
 
+    text = "📢 <b>E'LONLAR</b>\n\n"
+
     if not rows:
 
-        text = (
-            "📢 Hozircha e'lonlar yo'q."
-        )
+        text += "Hozircha e'lonlar yo'q."
 
     else:
-
-        text = (
-            "📢 <b>SO'NGGI E'LONLAR</b>\n\n"
-        )
 
         for ad in rows:
 
@@ -2978,10 +3061,23 @@ async def admin_ads(
                 f"🆔 #{ad['id']}\n"
                 f"📝 {esc(ad['title'])}\n"
                 f"{status_text(ad['status'])}\n"
-                f"🔄 "
-                f"{ad['repeats_done']}/"
-                f"{ad['repeats_total']} marta\n\n"
+                f"🔄 {ad['repeats_done']}/"
+                f"{ad['repeats_total']}\n"
             )
+
+            if ad["status"] == "published":
+
+                text += (
+                    f"⏳ Keyingi: "
+                    f"{remaining_text(ad['next_post_at'])}\n"
+                )
+
+                text += (
+                    f"⌛ Tugashigacha: "
+                    f"{remaining_text(ad['expires_at'])}\n"
+                )
+
+            text += "\n"
 
     await callback.message.edit_text(
         text,
@@ -3002,7 +3098,7 @@ async def admin_ads(
 
 
 # ============================================================
-# PAYMENTS
+# ADMIN PAYMENTS
 # ============================================================
 
 @dp.callback_query(
@@ -3012,15 +3108,14 @@ async def admin_payments(
     callback: types.CallbackQuery
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
-        return await callback.answer(
+        await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
         )
+
+        return
 
     with db() as c:
 
@@ -3077,23 +3172,20 @@ Kerakli to'lovni tanlang.
 
 
 @dp.callback_query(
-    F.data.regexp(
-        r"^payment_view_\d+$"
-    )
+    F.data.regexp(r"^payment_view_\d+$")
 )
 async def payment_view(
     callback: types.CallbackQuery
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
-        return await callback.answer(
+        await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
         )
+
+        return
 
     payment_id = int(
         callback.data.split("_")[-1]
@@ -3105,15 +3197,17 @@ async def payment_view(
 
     if not payment:
 
-        return await callback.answer(
+        await callback.answer(
             "❌ Topilmadi.",
             show_alert=True,
         )
 
+        return
+
     text = f"""
 💳 <b>TO'LOV #{payment['id']}</b>
 
-🆔 E'lon:
+📢 E'lon:
 #{payment['ad_id']}
 
 👤 Telegram ID:
@@ -3122,7 +3216,7 @@ async def payment_view(
 💰 {money(payment['amount'])} so'm
 
 📌 Holat:
-{payment['status']}
+<b>{esc(payment['status'])}</b>
 """
 
     buttons = []
@@ -3161,23 +3255,20 @@ async def payment_view(
 
 
 @dp.callback_query(
-    F.data.regexp(
-        r"^send_receipt_\d+$"
-    )
+    F.data.regexp(r"^send_receipt_\d+$")
 )
 async def send_receipt(
     callback: types.CallbackQuery
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
-        return await callback.answer(
+        await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
         )
+
+        return
 
     payment_id = int(
         callback.data.split("_")[-1]
@@ -3206,7 +3297,7 @@ async def send_receipt(
 
 
 # ============================================================
-# USERS
+# ADMIN USERS
 # ============================================================
 
 @dp.callback_query(
@@ -3216,15 +3307,14 @@ async def admin_users(
     callback: types.CallbackQuery
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
-        return await callback.answer(
+        await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
         )
+
+        return
 
     with db() as c:
 
@@ -3272,15 +3362,14 @@ async def admin_broadcast(
     state: FSMContext
 ):
 
-    if (
-        callback.from_user.id
-        != ADMIN_ID
-    ):
+    if callback.from_user.id != ADMIN_ID:
 
-        return await callback.answer(
+        await callback.answer(
             "❌ Ruxsat yo'q.",
             show_alert=True,
         )
+
+        return
 
     await state.set_state(
         BroadcastForm.message
@@ -3306,10 +3395,7 @@ async def broadcast(
     state: FSMContext
 ):
 
-    if (
-        message.from_user.id
-        != ADMIN_ID
-    ):
+    if message.from_user.id != ADMIN_ID:
         return
 
     with db() as c:
@@ -3335,24 +3421,40 @@ async def broadcast(
                     user["telegram_id"],
                     message.photo[-1].file_id,
                     caption=(
-                        message.caption
-                        or
-                        ""
+                        message.caption or ""
                     ),
+                )
+
+            elif message.text:
+
+                await bot.send_message(
+                    user["telegram_id"],
+                    message.text,
                 )
 
             else:
 
-                await bot.send_message(
-                    user["telegram_id"],
-                    message.text or "",
-                )
+                failed += 1
+                continue
 
             success += 1
 
-        except Exception:
+        except Exception as e:
 
             failed += 1
+
+            if "bot was blocked" in str(e).lower():
+
+                with db() as c:
+
+                    c.execute(
+                        """
+                        UPDATE users
+                        SET blocked=1
+                        WHERE telegram_id=?
+                        """,
+                        (user["telegram_id"],),
+                    )
 
     await state.clear()
 
@@ -3383,9 +3485,56 @@ async def scheduler_loop():
 
             current = now()
 
+            # ------------------------------------------------
+            # 1. RECEIPT TIMEOUT
+            # ------------------------------------------------
+
             with db() as c:
 
-                expired = c.execute(
+                expired_payments = c.execute(
+                    """
+                    SELECT id, ad_id
+                    FROM payments
+                    WHERE status IN (
+                        'waiting',
+                        'paid'
+                    )
+                    AND expires_at IS NOT NULL
+                    AND expires_at <= ?
+                    """,
+                    (iso(current),),
+                ).fetchall()
+
+            for payment in expired_payments:
+
+                with db() as c:
+
+                    c.execute(
+                        """
+                        UPDATE payments
+                        SET status='expired'
+                        WHERE id=?
+                        """,
+                        (payment["id"],),
+                    )
+
+                    c.execute(
+                        """
+                        UPDATE ads
+                        SET status='cancelled'
+                        WHERE id=?
+                        AND status='pending'
+                        """,
+                        (payment["ad_id"],),
+                    )
+
+            # ------------------------------------------------
+            # 2. EXPIRED ADS
+            # ------------------------------------------------
+
+            with db() as c:
+
+                expired_ads = c.execute(
                     """
                     SELECT id, telegram_id
                     FROM ads
@@ -3393,30 +3542,10 @@ async def scheduler_loop():
                     AND expires_at IS NOT NULL
                     AND expires_at <= ?
                     """,
-                    (
-                        iso(current),
-                    ),
+                    (iso(current),),
                 ).fetchall()
 
-                due = c.execute(
-                    """
-                    SELECT id
-                    FROM ads
-                    WHERE status='published'
-                    AND next_post_at IS NOT NULL
-                    AND next_post_at <= ?
-                    AND repeats_done < repeats_total
-                    """,
-                    (
-                        iso(current),
-                    ),
-                ).fetchall()
-
-            # ------------------------------------------------
-            # EXPIRED ADS
-            # ------------------------------------------------
-
-            for ad in expired:
+            for ad in expired_ads:
 
                 await delete_ad_posts(
                     ad["id"]
@@ -3431,9 +3560,7 @@ async def scheduler_loop():
                             next_post_at=NULL
                         WHERE id=?
                         """,
-                        (
-                            ad["id"],
-                        ),
+                        (ad["id"],),
                     )
 
                 try:
@@ -3442,17 +3569,32 @@ async def scheduler_loop():
                         ad["telegram_id"],
                         f"""
 ⌛ <b>E'loningiz #{ad['id']} tugadi.</b>
+
+Barcha joylangan postlar avtomatik o'chirildi.
 """,
                         parse_mode="HTML",
                     )
 
                 except Exception:
-
                     pass
 
             # ------------------------------------------------
-            # DUE REPOSTS
+            # 3. DUE REPOSTS
             # ------------------------------------------------
+
+            with db() as c:
+
+                due = c.execute(
+                    """
+                    SELECT id
+                    FROM ads
+                    WHERE status='published'
+                    AND next_post_at IS NOT NULL
+                    AND next_post_at <= ?
+                    AND repeats_done < repeats_total
+                    """,
+                    (iso(current),),
+                ).fetchall()
 
             for row in due:
 
@@ -3463,19 +3605,20 @@ async def scheduler_loop():
                 if not ad:
                     continue
 
-                if (
-                    ad["repeats_done"]
-                    >=
-                    ad["repeats_total"]
-                ):
+                if ad["repeats_done"] >= ad["repeats_total"]:
                     continue
 
-                # Eski e'lon o'chadi.
-                # Yangi e'lon kanalga chiqadi.
+                # --------------------------------------------
+                # ESKI POSTNI O'CHIRISH
+                # --------------------------------------------
 
                 await delete_ad_posts(
                     ad["id"]
                 )
+
+                # --------------------------------------------
+                # YANGI POST
+                # --------------------------------------------
 
                 try:
 
@@ -3487,7 +3630,7 @@ async def scheduler_loop():
 
                     log.exception(
                         "Repost xatosi #%s",
-                        ad["id"]
+                        ad["id"],
                     )
 
                     continue
@@ -3499,9 +3642,16 @@ async def scheduler_loop():
                 if not updated:
                     continue
 
-                selected = get_tariff(
+                tariff = get_tariff(
                     updated["tariff_id"]
                 )
+
+                if not tariff:
+                    continue
+
+                # --------------------------------------------
+                # KEYINGI POST
+                # --------------------------------------------
 
                 if (
                     updated["repeats_done"]
@@ -3509,18 +3659,13 @@ async def scheduler_loop():
                     updated["repeats_total"]
                 ):
 
-                    hours = (
-                        selected["interval_hours"]
-                        if selected
-                        else
-                        updated["interval_hours"]
-                    )
-
                     next_time = (
                         current
                         +
                         timedelta(
-                            hours=hours
+                            hours=tariff[
+                                "interval_hours"
+                            ]
                         )
                     )
 
@@ -3540,15 +3685,34 @@ async def scheduler_loop():
 
                 else:
 
+                    # Oxirgi post chiqdi.
+                    #
+                    # Oxirgi post ham intervaldan keyin
+                    # avtomatik o'chiriladi.
+                    #
+                    # expires_at aynan shu vaqtga ko'chiriladi.
+
+                    final_delete = (
+                        current
+                        +
+                        timedelta(
+                            hours=tariff[
+                                "interval_hours"
+                            ]
+                        )
+                    )
+
                     with db() as c:
 
                         c.execute(
                             """
                             UPDATE ads
-                            SET next_post_at=NULL
+                            SET next_post_at=NULL,
+                                expires_at=?
                             WHERE id=?
                             """,
                             (
+                                iso(final_delete),
                                 updated["id"],
                             ),
                         )
@@ -3559,9 +3723,23 @@ async def scheduler_loop():
                 "Scheduler xatosi"
             )
 
-        await asyncio.sleep(
-            20
-        )
+        # Har 20 sekundda tekshiradi.
+        await asyncio.sleep(20)
+
+
+# ============================================================
+# ERROR HANDLER
+# ============================================================
+
+@dp.errors()
+async def global_error(
+    event: types.ErrorEvent
+):
+
+    log.exception(
+        "Unhandled Telegram update error: %s",
+        event.exception,
+    )
 
 
 # ============================================================
