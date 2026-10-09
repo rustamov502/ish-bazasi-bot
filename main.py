@@ -431,8 +431,8 @@ def status_text(status):
 # ============================================================
 
 def main_menu():
-    # Railway bergan domeingizni shu yerga yozasiz (oxiriga / qo'yilmaydi)
-    web_app_url = "https://SIZNING_RAILWAY_DOMENINGIZ.up.railway.app"
+    # Railway bergan domeingiz ulandi[cite: 2, 3]
+    web_app_url = "https://ish-bazasi-bot-production.up.railway.app"
 
     return RK(
         keyboard=[
