@@ -1,742 +1,331 @@
-Siz yuborgan `index.html` kodi juda zo'r yozilgan ekan, faqat oxirida (`TARIFF CONFIG` qismida) biroz chala to'xtab qolgan va to'liq yozilmay qolgan ekan.
-
-Kodingizdagi siz yozgan dizayn, navigatsiya, tugmalar va barcha elementlarga umuman teginmasdan, faqat oxiridagi chala qismini to'ldirib, to'liq va xatosiz holatga keltirib beraman.
-
-GitHub'dagi `miniapp/index.html` faylingiz ichidagi hamma narsani o'chirib, pastdagi **to'liq va oxirigacha yozilgan** kodni joylab qo'yasiz:
-
-```html
 <!DOCTYPE html>
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ish Bazasi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ish Bazasi — Pricelist</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
-
-        :root {
-            --blue: #1677ff;
-            --blue-dark: #125ed0;
-            --blue-soft: #edf5ff;
-            --text: #111827;
-            --muted: #7b8494;
-            --bg: #f5f7fa;
-            --card: #ffffff;
-            --border: #e9edf2;
-            --radius: 18px;
-        }
-
         body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            background: var(--tg-theme-bg-color, var(--bg));
-            color: var(--tg-theme-text-color, var(--text));
-        }
-
-        button {
-            font: inherit;
-        }
-
-        button, .ad-card {
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        .app {
-            width: 100%;
-            max-width: 620px;
-            margin: 0 auto;
-            padding-bottom: 88px;
-        }
-
-        /* HEADER */
-        .header {
-            padding: 20px 16px 12px;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .brand-left {
-            min-width: 0;
-        }
-
-        .brand-title {
-            margin: 0;
-            font-size: 24px;
-            line-height: 1.15;
-            font-weight: 850;
-            letter-spacing: -.5px;
-        }
-
-        .brand-subtitle {
-            margin: 5px 0 0;
-            font-size: 12px;
-            line-height: 1.4;
-            color: var(--muted);
-        }
-
-        .brand-avatar {
-            width: 44px;
-            height: 44px;
-            flex: 0 0 44px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #1677ff, #5b4be7);
-            color: #fff;
-            font-weight: 850;
-            font-size: 17px;
-            box-shadow: 0 8px 20px rgba(22, 119, 255, .18);
-        }
-
-        /* HERO */
-        .hero {
-            margin: 8px 16px 20px;
-            padding: 21px;
-            border-radius: 23px;
-            background: linear-gradient(135deg, #1677ff 0%, #245fe4 55%, #5b4be7 100%);
-            color: #fff;
-            box-shadow: 0 12px 30px rgba(30, 90, 220, .18);
-        }
-
-        .hero-label {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 9px;
-            border-radius: 10px;
-            background: rgba(255,255,255,.14);
-            font-size: 11px;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
-
-        .hero h2 {
-            margin: 0 0 8px;
-            font-size: 22px;
-            line-height: 1.2;
-            font-weight: 850;
-            letter-spacing: -.3px;
-        }
-
-        .hero p {
-            margin: 0;
-            font-size: 13px;
-            line-height: 1.55;
-            color: rgba(255,255,255,.91);
-        }
-
-        .hero-btn {
-            width: 100%;
-            margin-top: 17px;
-            padding: 14px;
-            border: 0;
-            border-radius: 14px;
-            background: #fff;
-            color: var(--blue-dark);
-            font-size: 14px;
-            font-weight: 850;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,.08);
-        }
-
-        .hero-btn:active {
-            transform: scale(.985);
-        }
-
-        /* SECTIONS */
-        .section {
-            padding: 0 16px;
-            margin-top: 22px;
-        }
-
-        .section:first-child {
-            margin-top: 0;
-        }
-
-        .section-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 11px;
-        }
-
-        .section-title {
-            margin: 0;
-            font-size: 17px;
-            font-weight: 850;
-            letter-spacing: -.2px;
-        }
-
-        .section-count {
-            color: var(--muted);
-            font-size: 11px;
-            white-space: nowrap;
-        }
-
-        /* SERVICE GRID */
-        .service-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
-        }
-
-        .service-card {
-            width: 100%;
-            border: 1px solid var(--tg-theme-secondary-bg-color, var(--border));
-            background: var(--tg-theme-secondary-bg-color, var(--card));
-            border-radius: 18px;
-            padding: 15px;
-            text-align: left;
-            cursor: pointer;
-            box-shadow: 0 3px 12px rgba(0,0,0,.035);
-        }
-
-        .service-card:active {
-            transform: scale(.985);
-        }
-
-        .service-icon {
-            width: 39px;
-            height: 39px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--blue-soft);
-            font-size: 19px;
-            margin-bottom: 10px;
-        }
-
-        .service-title {
-            display: block;
-            font-size: 13px;
-            font-weight: 800;
-            color: var(--tg-theme-text-color, var(--text));
-        }
-
-        .service-description {
-            display: block;
-            margin-top: 4px;
-            font-size: 10.5px;
-            line-height: 1.35;
-            color: var(--muted);
-        }
-
-        /* ADS */
-        .ads-list {
-            display: flex;
-            flex-direction: column;
-            gap: 9px;
-        }
-
-        .ad-card {
-            display: flex;
-            align-items: center;
-            gap: 11px;
-            width: 100%;
-            padding: 11px;
-            border-radius: 17px;
-            background: var(--tg-theme-secondary-bg-color, var(--card));
-            border: 1px solid var(--tg-theme-secondary-bg-color, var(--border));
-            box-shadow: 0 3px 12px rgba(0,0,0,.035);
-            cursor: pointer;
-        }
-
-        .ad-card:active {
-            transform: scale(.99);
-        }
-
-        .ad-image {
-            width: 60px;
-            height: 60px;
-            flex: 0 0 60px;
-            border-radius: 14px;
-            object-fit: cover;
-            background: linear-gradient(135deg, #edf1f5, #e4e8ed);
-        }
-
-        .ad-image-placeholder {
-            width: 60px;
-            height: 60px;
-            flex: 0 0 60px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f0f3f7;
-            color: #a0a8b4;
-            font-size: 21px;
-        }
-
-        .ad-content {
-            min-width: 0;
-            flex: 1;
-        }
-
-        .ad-title {
-            font-size: 13.5px;
-            font-weight: 820;
-            line-height: 1.25;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .ad-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px 8px;
-            margin-top: 5px;
-        }
-
-        .ad-meta-item {
-            min-width: 0;
-            color: var(--muted);
-            font-size: 10.5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .ad-progress {
-            margin-top: 5px;
-            color: #9aa2af;
-            font-size: 9.5px;
-        }
-
-        .ad-arrow {
-            color: #a0a8b4;
-            font-size: 22px;
-            padding-left: 2px;
-        }
-
-        /* TARIFFS */
-        .tariffs {
-            display: flex;
-            flex-direction: column;
-            gap: 9px;
-        }
-
-        .tariff-card {
-            background: var(--tg-theme-secondary-bg-color, var(--card));
-            border: 1px solid var(--tg-theme-secondary-bg-color, var(--border));
-            border-radius: 18px;
+            background-color: #0b0b0b;
+            color: #ffffff;
             padding: 16px;
-            box-shadow: 0 3px 12px rgba(0,0,0,.035);
+            padding-bottom: 90px;
         }
-
-        .tariff-top {
+        .header {
             display: flex;
-            align-items: flex-start;
             justify-content: space-between;
-            gap: 12px;
+            align-items: flex-start;
+            margin-bottom: 24px;
         }
-
-        .tariff-name {
+        .brand {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #f3d052;
+        }
+        .subtitle {
+            font-size: 10px;
+            color: #888;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .pricelist-title {
+            text-align: right;
             font-size: 14px;
-            font-weight: 850;
-            line-height: 1.3;
+            font-weight: 600;
+            color: #aaa;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
-
-        .tariff-price {
-            color: var(--blue);
-            font-size: 14px;
-            font-weight: 900;
-            white-space: nowrap;
-        }
-
-        .tariff-details {
-            margin-top: 9px;
-            color: var(--muted);
+        .section-title {
             font-size: 11px;
-            line-height: 1.65;
-        }
-
-        .tariff-details b {
-            color: var(--tg-theme-text-color, var(--text));
-            font-weight: 750;
-        }
-
-        /* PAGE */
-        .page-section {
-            padding: 10px 16px 0;
-        }
-
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            border: 0;
-            background: transparent;
-            padding: 7px 0;
-            color: var(--blue);
-            font-size: 13px;
-            font-weight: 750;
-            cursor: pointer;
-        }
-
-        .notice {
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
             margin-bottom: 12px;
-            padding: 12px 13px;
-            border-radius: 14px;
-            background: var(--blue-soft);
-            color: #41628d;
+        }
+        .card {
+            background-color: #161616;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #222;
+            position: relative;
+        }
+        .card.popular {
+            border: 1px solid #f3d052;
+            background: linear-gradient(135deg, #161616 0%, #1f1a0e 100%);
+        }
+        .popular-badge {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background-color: #f3d052;
+            color: #000;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .card-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .number-box {
+            width: 42px;
+            height: 42px;
+            background-color: #222;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .card.popular .number-box {
+            background-color: #f3d052;
+            color: #000;
+        }
+        .plan-name {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+        .plan-desc {
             font-size: 11px;
-            line-height: 1.5;
+            color: #888;
+            margin-bottom: 6px;
         }
-
-        /* EMPTY / LOADER */
-        .empty {
-            padding: 27px 15px;
-            text-align: center;
-            background: var(--tg-theme-secondary-bg-color, var(--card));
-            border-radius: 17px;
-            color: var(--muted);
-            font-size: 12px;
+        .tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
         }
-
-        .loader {
-            padding: 30px 15px;
-            text-align: center;
-            color: var(--muted);
-            font-size: 12px;
+        .tag {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 600;
         }
+        .tag-green { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .tag-purple { background-color: rgba(168, 85, 247, 0.15); color: #c084fc; }
+        .tag-pink { background-color: rgba(236, 72, 153, 0.15); color: #f472b6; }
+        .tag-yellow { background-color: rgba(243, 208, 82, 0.15); color: #f3d052; }
 
-        /* BOTTOM NAV */
-        .bottom-nav {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 50;
-            background: var(--tg-theme-bg-color, var(--bg));
-            border-top: 1px solid rgba(0,0,0,.06);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+        .card-right {
+            text-align: right;
         }
-
-        .bottom-inner {
-            width: 100%;
-            max-width: 620px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            padding: 7px 9px calc(7px + env(safe-area-inset-bottom));
+        .price {
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
         }
-
-        .nav-btn {
-            border: 0;
-            background: transparent;
-            color: var(--muted);
-            border-radius: 13px;
-            padding: 7px 4px;
-            cursor: pointer;
+        .price-sub {
+            font-size: 10px;
+            color: #777;
+            margin-top: 2px;
+        }
+        .instagram-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 24px 0 12px 0;
+        }
+        .instagram-icon {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
             font-size: 10px;
         }
-
-        .nav-btn.active {
-            background: var(--blue-soft);
-            color: var(--blue);
-            font-weight: 800;
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px;
+            background: linear-gradient(to top, #0b0b0b 80%, transparent);
         }
-
-        .nav-icon {
+        .btn-contact {
             display: block;
-            font-size: 18px;
-            line-height: 20px;
-            margin-bottom: 2px;
+            width: 100%;
+            background-color: #f3d052;
+            color: #000;
+            text-align: center;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            text-decoration: none;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
-
-        .hidden {
-            display: none !important;
+        .info-text {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 8px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-<div class="app">
-    <!-- HEADER -->
-    <header class="header">
-        <div class="brand">
-            <div class="brand-left">
-                <h1 class="brand-title">💼 Ish Bazasi</h1>
-                <p class="brand-subtitle">Ish beruvchilar uchun e'lon platformasi</p>
-            </div>
-            <div class="brand-avatar">IB</div>
+    <div class="header">
+        <div>
+            <div class="brand">ISH BAZASI</div>
+            <div class="subtitle">Vakansiya platformasi</div>
         </div>
-    </header>
-
-    <!-- HOME -->
-    <section id="home">
-        <div class="hero">
-            <div class="hero-label">📢 Ish e'lonlarini joylashtirish</div>
-            <h2>E'loningizni kanalga chiqaring</h2>
-            <p>Ishchi qidiryapsizmi? E'loningizni Ish Bazasi kanalida ko'proq odamlarga yetkazing.</p>
-            <button class="hero-btn" id="heroCreate" type="button">➕ E'lon berish</button>
-        </div>
-
-        <!-- SERVICES -->
-        <div class="section">
-            <div class="section-head">
-                <h3 class="section-title">Xizmatlar</h3>
-            </div>
-            <div class="service-grid">
-                <button class="service-card" id="createBtn" type="button">
-                    <div class="service-icon">📢</div>
-                    <span class="service-title">E'lon berish</span>
-                    <span class="service-description">Yangi e'lon joylash</span>
-                </button>
-                <button class="service-card" id="adsBtn" type="button">
-                    <div class="service-icon">📋</div>
-                    <span class="service-title">E'lonlar</span>
-                    <span class="service-description">Faol e'lonlarni ko'rish</span>
-                </button>
-                <button class="service-card" id="tariffsBtn" type="button">
-                    <div class="service-icon">💰</div>
-                    <span class="service-title">Tariflar</span>
-                    <span class="service-description">Joylashtirish shartlari</span>
-                </button>
-                <button class="service-card" id="channelBtn" type="button">
-                    <div class="service-icon">📣</div>
-                    <span class="service-title">Kanal</span>
-                    <span class="service-description">Ish Bazasi kanaliga o'tish</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- ACTIVE ADS -->
-        <div class="section">
-            <div class="section-head">
-                <h3 class="section-title">Faol e'lonlar</h3>
-                <span class="section-count" id="adsCount">Yuklanmoqda...</span>
-            </div>
-            <div id="homeAds" class="ads-list">
-                <div class="loader">E'lonlar yuklanmoqda...</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ADS PAGE -->
-    <section id="adsPage" class="hidden">
-        <div class="page-section">
-            <button class="back-btn" id="adsBack" type="button">← Bosh sahifa</button>
-            <div class="section-head">
-                <h3 class="section-title">📢 Faol e'lonlar</h3>
-                <span class="section-count">Ish Bazasi</span>
-            </div>
-            <div class="notice">E'lonni tanlasangiz, Telegram kanalidagi aynan shu post ochiladi.</div>
-            <div id="allAds" class="ads-list">
-                <div class="loader">E'lonlar yuklanmoqda...</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- TARIFFS PAGE -->
-    <section id="tariffsPage" class="hidden">
-        <div class="page-section">
-            <button class="back-btn" id="tariffsBack" type="button">← Bosh sahifa</button>
-            <div class="section-head">
-                <h3 class="section-title">💰 Tariflar</h3>
-            </div>
-            <div class="notice">Quyidagi tariflar botdagi mavjud sozlamalardan avtomatik olinadi.</div>
-            <div id="tariffsList" class="tariffs">
-                <div class="loader">Tariflar yuklanmoqda...</div>
-            </div>
-        </div>
-    </section>
-</div>
-
-<!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-    <div class="bottom-inner">
-        <button class="nav-btn active" id="navHome" type="button">
-            <span class="nav-icon">🏠</span> Bosh sahifa
-        </button>
-        <button class="nav-btn" id="navAds" type="button">
-            <span class="nav-icon">📢</span> E'lonlar
-        </button>
-        <button class="nav-btn" id="navTariffs" type="button">
-            <span class="nav-icon">💰</span> Tariflar
-        </button>
+        <div class="pricelist-title">Telegram<br>Pricelist</div>
     </div>
-</nav>
 
-<script>
-    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    <div class="section-title">Telegram Tariflar</div>
 
-    if (tg) {
-        tg.ready();
-        tg.expand();
-        if (tg.enableClosingConfirmation) {
-            tg.enableClosingConfirmation();
-        }
-    }
-
-    let ads = [];
-
-    function formatMoney(value) {
-        const number = Number(value || 0);
-        return number.toLocaleString("uz-UZ") + " so'm";
-    }
-
-    function escapeHtml(value) {
-        if (value === null || value === undefined) return "";
-        return String(value)
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#039;");
-    }
-
-    function safeUrl(value) {
-        if (!value) return "";
-        return String(value).replaceAll("'", "%27").replaceAll('"', "%22");
-    }
-
-    function showPage(page) {
-        ["home", "adsPage", "tariffsPage"].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.add("hidden");
-        });
-
-        const selected = document.getElementById(page);
-        if (selected) selected.classList.remove("hidden");
-
-        document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
-
-        if (page === "home") document.getElementById("navHome").classList.add("active");
-        if (page === "adsPage") document.getElementById("navAds").classList.add("active");
-        if (page === "tariffsPage") document.getElementById("navTariffs").classList.add("active");
-
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    function createAd() {
-        if (!tg) {
-            alert("Mini App Telegram ichida ochilishi kerak.");
-            return;
-        }
-        try {
-            tg.sendData(JSON.stringify({ action: "new_ad" }));
-            setTimeout(() => {
-                try { tg.close(); } catch (e) {}
-            }, 250);
-        } catch (error) {
-            console.error("sendData error:", error);
-        }
-    }
-
-    function openAd(url) {
-        if (!url) return;
-        if (tg && typeof tg.openTelegramLink === "function") {
-            tg.openTelegramLink(url);
-            return;
-        }
-        window.open(url, "_blank");
-    }
-
-    function renderAd(ad) {
-        const image = ad.image_file_id ? "/api/image?id=" + encodeURIComponent(ad.id) : "";
-        const imageHtml = image ? `<img class="ad-image" src="${image}" alt="" loading="lazy">` : `<div class="ad-image-placeholder">💼</div>`;
-        const title = escapeHtml(ad.title || "Nomsiz e'lon");
-        const location = escapeHtml(ad.location || "Manzil ko'rsatilmagan");
-        const profession = escapeHtml(ad.profession || "Ish turi ko'rsatilmagan");
-        const postsDone = Number(ad.posts_done || 0);
-        const totalPosts = Number(ad.total_posts || 0);
-        const channelUrl = safeUrl(ad.channel_message_url || "");
-
-        return `
-            <div class="ad-card" data-url="${channelUrl}">
-                ${imageHtml}
-                <div class="ad-content">
-                    <div class="ad-title">${title}</div>
-                    <div class="ad-meta">
-                        <span class="ad-meta-item">📍 ${location}</span>
-                        <span class="ad-meta-item">🛠 ${profession}</span>
-                    </div>
-                    <div class="ad-progress">📢 ${postsDone} / ${totalPosts} joylashuv</div>
+    <div class="card">
+        <div class="card-left">
+            <div class="number-box">2</div>
+            <div>
+                <div class="plan-name">START</div>
+                <div class="plan-desc">2 kunlik e'lon</div>
+                <div class="tags">
+                    <span class="tag tag-green">Kuniga 1× joylash</span>
                 </div>
-                <div class="ad-arrow">›</div>
             </div>
-        `;
-    }
+        </div>
+        <div class="card-right">
+            <div class="price">89 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
+            <div class="price-sub">44 500 / e'lon</div>
+        </div>
+    </div>
 
-    function attachAdClicks(container) {
-        if (!container) return;
-        container.querySelectorAll(".ad-card").forEach(card => {
-            card.addEventListener("click", () => {
-                openAd(card.dataset.url || "");
-            });
-        });
-    }
+    <div class="card">
+        <div class="card-left">
+            <div class="number-box">4</div>
+            <div>
+                <div class="plan-name">STANDART</div>
+                <div class="plan-desc">4 kunlik e'lon</div>
+                <div class="tags">
+                    <span class="tag tag-green">Kuniga 1× joylash</span>
+                    <span class="tag tag-purple">Instagram Stories</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-right">
+            <div class="price">159 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
+            <div class="price-sub">39 750 / e'lon</div>
+        </div>
+    </div>
 
-    function renderAds() {
-        const home = document.getElementById("homeAds");
-        const all = document.getElementById("allAds");
-        const count = document.getElementById("adsCount");
+    <div class="card popular">
+        <div class="popular-badge">Mashhur</div>
+        <div class="card-left">
+            <div class="number-box" style="background:#f3d052; color:#000;">6</div>
+            <div>
+                <div class="plan-name">BOOST</div>
+                <div class="plan-desc">6 kunlik e'lon</div>
+                <div class="tags">
+                    <span class="tag tag-green">Kuniga 2× joylash</span>
+                    <span class="tag tag-purple">Instagram Stories</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-right">
+            <div class="price">199 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
+            <div class="price-sub">16 583 / e'lon</div>
+        </div>
+    </div>
 
-        if (count) count.textContent = `${ads.length} ta`;
+    <div class="card">
+        <div class="card-left">
+            <div class="number-box">12</div>
+            <div>
+                <div class="plan-name">PREMIUM</div>
+                <div class="plan-desc">12 kunlik e'lon</div>
+                <div class="tags">
+                    <span class="tag tag-green">Kuniga 2× joylash</span>
+                    <span class="tag tag-purple">Instagram Stories</span>
+                    <span class="tag tag-pink">Instagram Reels</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-right">
+            <div class="price">299 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
+            <div class="price-sub">12 458 / e'lon</div>
+        </div>
+    </div>
 
-        if (!ads.length) {
-            const empty = `<div class="empty">📭 Hozircha faol e'lonlar yo'q.</div>`;
-            if (home) home.innerHTML = empty;
-            if (all) all.innerHTML = empty;
-            return;
-        }
+    <div class="card">
+        <div class="card-left">
+            <div class="number-box">30</div>
+            <div>
+                <div class="plan-name">VIP</div>
+                <div class="plan-desc">30 kunlik e'lon</div>
+                <div class="tags">
+                    <span class="tag tag-green">Kuniga 2× joylash</span>
+                    <span class="tag tag-purple">3× Stories</span>
+                    <span class="tag tag-pink">3× Reels</span>
+                    <span class="tag tag-yellow">3 kun pin</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-right">
+            <div class="price">649 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
+            <div class="price-sub">10 817 / e'lon</div>
+        </div>
+    </div>
 
-        const html = ads.map(renderAd).join("");
-        if (home) home.innerHTML = html;
-        if (all) all.innerHTML = html;
+    <div class="instagram-header">
+        <div class="instagram-icon">📷</div>
+        <div style="font-size: 13px; font-weight: 700;">Instagram xizmatlari</div>
+    </div>
+    <div style="font-size: 11px; color: #777; margin-bottom: 12px;">208 000 ta obunachi</div>
 
-        attachAdClicks(home);
-        attachAdClicks(all);
-    }
+    <div class="card">
+        <div class="card-left">
+            <div>
+                <div class="plan-name">Instagram Reels</div>
+                <div class="plan-desc">1 ta video e'lon</div>
+            </div>
+        </div>
+        <div class="card-right">
+            <div class="price">199 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
+        </div>
+    </div>
 
-    async function loadAds() {
-        try {
-            const response = await fetch("/api/ads", { cache: "no-store" });
-            if (!response.ok) throw new Error("Ads API error");
-            const data = await response.json();
-            ads = Array.isArray(data) ? data : [];
-            renderAds();
-        } catch (error) {
-            console.error(error);
-            const msg = `<div class="empty">❌ E'lonlarni yuklashda xato yuz berdi.</div>`;
-            document.getElementById("homeAds").innerHTML = msg;
-            document.getElementById("allAds").innerHTML = msg;
-        }
-    }
+    <div class="card">
+        <div class="card-left">
+            <div>
+                <div class="plan-name">Instagram Stories</div>
+                <div class="plan-desc">1 ta stories e'lon</div>
+            </div>
+        </div>
+        <div class="card-right">
+            <div class="price">49 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
+        </div>
+    </div>
 
-    // Tugma hodisalari
-    document.getElementById("heroCreate").addEventListener("click", createAd);
-    document.getElementById("createBtn").addEventListener("click", createAd);
-    document.getElementById("adsBtn").addEventListener("click", () => showPage("adsPage"));
-    document.getElementById("tariffsBtn").addEventListener("click", () => showPage("tariffsPage"));
-    document.getElementById("channelBtn").addEventListener("click", () => openAd("https://t.me/Ishbazasi"));
-    
-    document.getElementById("adsBack").addEventListener("click", () => showPage("home"));
-    document.getElementById("tariffsBack").addEventListener("click", () => showPage("home"));
+    <div class="footer">
+        <div class="info-text">Batafsil ma'lumot uchun shaxsiy xabarga yozing</div>
+        <a href="https://t.me/rustamovvvll" target="_blank" class="btn-contact">Bog'lanish</a>
+    </div>
 
-    document.getElementById("navHome").addEventListener("click", () => showPage("home"));
-    document.getElementById("navAds").addEventListener("click", () => showPage("adsPage"));
-    document.getElementById("navTariffs").addEventListener("click", () => showPage("tariffsPage"));
-
-    // Ishga tushirish
-    loadAds();
-</script>
 </body>
 </html>
-
-```
