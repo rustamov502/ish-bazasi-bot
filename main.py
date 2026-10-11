@@ -1,4 +1,5 @@
 import asyncio
+import aiohttp
 import html
 import logging
 import os
@@ -19,8 +20,8 @@ from aiogram.types import (
     ReplyKeyboardMarkup as RK,
     WebAppInfo,
 )
-from fastapi import FastAPI
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse, Response
 import uvicorn
 
 
@@ -84,15 +85,91 @@ async def get_ads_api():
     with db() as connection:
         rows = connection.execute(
             """
-            SELECT id, title, location, profession, conditions, contact,
-                   image_file_id, created_at
-            FROM ads
-            WHERE status='published'
-            ORDER BY id DESC
+            SELECT a.id, a.title, a.location, a.profession,
+                   a.conditions, a.contact, a.created_at,
+                   a.image_file_id,
+                   (
+                       SELECT p.message_id
+                       FROM ad_posts AS p
+                       WHERE p.ad_id = a.id
+                       ORDER BY p.id DESC
+                       LIMIT 1
+                   ) AS channel_message_id
+            FROM ads AS a
+            WHERE a.status='published'
+            ORDER BY a.id DESC
             LIMIT 30
             """
         ).fetchall()
-    return [dict(row) for row in rows]
+
+    channel_username = (
+        CHANNEL_ID.lstrip("@")
+        if CHANNEL_ID.startswith("@")
+        else ""
+    )
+    ads = []
+    for row in rows:
+        ad = dict(row)
+        has_image = bool(ad.pop("image_file_id", None))
+        message_id = ad.pop("channel_message_id", None)
+        ad["channel_url"] = (
+            f"https://t.me/{channel_username}/{message_id}"
+            if channel_username and message_id
+            else ""
+        )
+        ad["image_url"] = (
+            f"/api/ads/{ad['id']}/image"
+            if has_image
+            else ""
+        )
+        ads.append(ad)
+
+    return ads
+
+
+@app.get("/api/ads/{ad_id}/image")
+async def get_ad_image_api(ad_id: int):
+    with db() as connection:
+        row = connection.execute(
+            "SELECT image_file_id FROM ads WHERE id=? AND status='published'",
+            (ad_id,),
+        ).fetchone()
+
+    if not row or not row["image_file_id"]:
+        raise HTTPException(status_code=404, detail="Rasm topilmadi")
+
+    timeout = aiohttp.ClientTimeout(total=25)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(
+            f"https://api.telegram.org/bot{TOKEN}/getFile",
+            params={"file_id": row["image_file_id"]},
+        ) as telegram_response:
+            try:
+                file_info = await telegram_response.json(content_type=None)
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=502,
+                    detail="Telegram rasm ma'lumotini bermadi",
+                ) from exc
+
+        if not file_info.get("ok") or not file_info.get("result", {}).get("file_path"):
+            raise HTTPException(status_code=502, detail="Telegram rasm yo'lini bermadi")
+
+        file_url = (
+            f"https://api.telegram.org/file/bot{TOKEN}/"
+            f"{file_info['result']['file_path']}"
+        )
+        async with session.get(file_url) as image_response:
+            if image_response.status != 200:
+                raise HTTPException(status_code=502, detail="Telegram rasmini yuklab bo'lmadi")
+            image_bytes = await image_response.read()
+            media_type = image_response.headers.get("Content-Type", "image/jpeg")
+
+    return Response(
+        content=image_bytes,
+        media_type=media_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 @app.get("/api/config")
@@ -492,21 +569,31 @@ def status_text(status):
 # MAIN MENU
 # ============================================================
 
-def main_menu():
-    return RK(
-        keyboard=[
+def main_menu(user_id=None):
+    if user_id == ADMIN_ID:
+        keyboard = [
+            [
+                KB(text="🚀 E'lon berish"),
+                KB(text="📣 Hammaga xabar"),
+            ],
+            [
+                KB(text="📢 E'lonlarni ko'rish"),
+                KB(text="📞 Admin bilan bog'lanish"),
+            ],
+        ]
+    else:
+        keyboard = [
             [
                 KB(text="🚀 E'lon berish"),
                 KB(text="📢 E'lonlarni ko'rish"),
             ],
             [
                 KB(text="📞 Admin bilan bog'lanish"),
-                KB(
-                    text="🌐 Mini App",
-                    web_app=WebAppInfo(url=MINI_APP_URL),
-                ),
             ],
-        ],
+        ]
+
+    return RK(
+        keyboard=keyboard,
         resize_keyboard=True,
     )
 
@@ -675,7 +762,7 @@ shu bot orqali e’lon bering.
 📢 E'lonlaringiz ISH BAZASI kanalida
 kerakli auditoriyaga yetib boradi.
 """,
-        reply_markup=main_menu(),
+        reply_markup=main_menu(message.from_user.id),
         parse_mode="HTML",
     )
 
@@ -702,7 +789,7 @@ async def check_subscription(
 
 Endi botdan foydalanishingiz mumkin.
 """,
-            reply_markup=main_menu(),
+            reply_markup=main_menu(callback.from_user.id),
             parse_mode="HTML",
         )
 
@@ -1511,7 +1598,7 @@ async def receive_receipt(
 Tasdiqlangandan keyin
 e'lon kanalga chiqariladi.
 """,
-        reply_markup=main_menu(),
+        reply_markup=main_menu(message.from_user.id),
         parse_mode="HTML",
     )
 
@@ -1700,6 +1787,17 @@ async def send_ad_to_admin(ad_id):
 # ============================================================
 
 def build_channel_text(ad):
+    channel_username = (
+        CHANNEL_ID.lstrip("@")
+        if CHANNEL_ID.startswith("@")
+        else ""
+    )
+    telegram_link = (
+        f'<a href="https://t.me/{channel_username}">Ish Bazasi</a>'
+        if channel_username
+        else "Ish Bazasi"
+    )
+
     return f"""
 🟢 <b>{esc(ad['title'])}</b>
 
@@ -1717,7 +1815,7 @@ def build_channel_text(ad):
 
 🆔 <b>E'lon #{ad['id']}</b>
 
-📢 <b>ISH BAZASI</b>
+📢 Telegram: {telegram_link}
 
 📸 Instagram:
 <a href="{esc(INSTAGRAM_URL)}">@ishbazasi</a>
@@ -2374,6 +2472,21 @@ Matn yoki rasm yuborishingiz mumkin.
     await callback.answer()
 
 
+@dp.message(F.text == "📣 Hammaga xabar")
+async def admin_broadcast_from_menu(
+    message: types.Message,
+    state: FSMContext,
+):
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    await state.set_state(BroadcastForm.message)
+    await message.answer(
+        "📣 <b>HAMMAGA XABAR</b>\n\nYuboriladigan matn yoki rasmni yuboring.",
+        parse_mode="HTML",
+    )
+
+
 @dp.message(BroadcastForm.message)
 async def broadcast(
     message: types.Message,
@@ -2868,7 +2981,35 @@ async def scheduler_loop():
                     await delete_ad_posts(ad["id"])
 
                     # Yangi post
-                    await publish_ad(ad["id"])
+                    sent = await publish_ad(ad["id"])
+
+                    channel_username = (
+                        CHANNEL_ID.lstrip("@")
+                        if CHANNEL_ID.startswith("@")
+                        else ""
+                    )
+                    post_url = (
+                        f"https://t.me/{channel_username}/{sent.message_id}"
+                        if sent and channel_username
+                        else ""
+                    )
+
+                    try:
+                        await bot.send_message(
+                            ad["telegram_id"],
+                            f"🔄 <b>E'loningiz yangilandi va qayta joylandi.</b>\n\n📌 {esc(ad['title'])}",
+                            reply_markup=(
+                                IK(inline_keyboard=[[B(text="📢 E'lonni ko'rish", url=post_url)]])
+                                if post_url
+                                else None
+                            ),
+                            parse_mode="HTML",
+                        )
+                    except Exception:
+                        log.exception(
+                            "E'lon egasiga yangilanish xabari yuborilmadi #%s",
+                            ad["id"],
+                        )
 
                     updated = get_ad(ad["id"])
 
@@ -3005,6 +3146,16 @@ async def main():
     if not BOT_USERNAME:
         me = await bot.get_me()
         BOT_USERNAME = me.username or ""
+
+    try:
+        await bot.set_chat_menu_button(
+            menu_button=types.MenuButtonWebApp(
+                text="Ish Bazasi",
+                web_app=WebAppInfo(url=MINI_APP_URL),
+            )
+        )
+    except Exception:
+        log.exception("Ish Bazasi Mini App menyu tugmasini sozlab bo'lmadi")
 
     # Railway web xizmatini va Telegram bot pollingini bitta jarayonda ishga tushiramiz.
     Thread(target=run_fastapi, daemon=True, name="miniapp-web").start()
