@@ -12,7 +12,7 @@
     .wrap{max-width:680px;margin:0 auto;padding:18px 16px 12px}.top{display:flex;align-items:center;gap:11px;margin-bottom:17px}.mark{height:42px;width:42px;flex:none;border-radius:14px;background:var(--green);color:#11100d;display:grid;place-items:center;font-size:19px;font-weight:800}.brand-name{font-size:18px;font-weight:800;letter-spacing:-.3px}.brand-sub{font-size:12px;color:var(--muted)}
     .screen{display:none}.screen.active{display:block}.hero{background:linear-gradient(135deg,#171715,#211e17);border:1px solid #4b4029;border-radius:21px;padding:21px;color:var(--ink);margin:8px 0 23px;box-shadow:0 12px 26px #0005}.eyebrow{font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:#e0c37a;font-weight:700}.hero h1{font-size:23px;line-height:1.15;margin:8px 0}.hero p{font-size:13px;color:#c7c0b1;margin:0;max-width:440px}
     .section{margin:20px 0 12px;display:flex;align-items:end;justify-content:space-between;gap:10px}.section h2,.screen-title{font-size:19px;margin:0;letter-spacing:-.3px}.section span{font-size:11px;color:var(--muted)}.screen-intro{font-size:13px;color:var(--muted);margin:7px 0 16px}.cards{display:grid;gap:10px}.tariff{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;display:flex;justify-content:space-between;gap:12px;align-items:center}.tariff.vip{border-color:#76623a;background:linear-gradient(120deg,#191815,#211e17)}.tariff-name{font-weight:800;font-size:14px}.tariff-meta{font-size:12px;color:var(--muted);margin-top:4px}.tariff-badge{display:inline-block;background:#332b1b;color:var(--gold);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:5px;vertical-align:2px}.price{font-weight:850;font-size:16px;text-align:right;white-space:nowrap}.currency{font-size:10px;font-weight:600;color:var(--muted)}
-    .ad{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px}.ad-title{font-size:15px;font-weight:800;margin:0 0 7px}.ad-location{font-size:12px;color:var(--green);font-weight:700;margin-bottom:8px}.ad-desc{font-size:13px;color:#c5beaf;white-space:pre-line}.ad-contact,.channel-link{display:inline-block;margin-top:10px;color:var(--green);font-size:13px;font-weight:700;text-decoration:none}.ad-date{font-size:10px;color:#918b7e;margin-top:9px}.empty,.loading,.error,.preview-note{background:var(--card);padding:16px;border-radius:15px;text-align:center;color:var(--muted);font-size:13px;border:1px solid var(--line)}.preview-note{margin-top:12px;background:#1c1a15;border-color:#403823;text-align:left;font-size:12px;color:#bcb29b}
+    .ad{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .18s,transform .18s}.ad:hover,.ad:focus-visible{border-color:#8b7444;transform:translateY(-1px);outline:none}.ad-info{min-width:0;flex:1}.ad-title{font-size:15px;font-weight:800;margin:0 0 7px}.ad-location{font-size:12px;color:var(--green);font-weight:700;margin-bottom:8px}.ad-desc{font-size:13px;color:#c5beaf;white-space:pre-line}.ad-contact,.channel-link{display:inline-block;margin-top:10px;color:var(--green);font-size:13px;font-weight:700;text-decoration:none}.ad-date{font-size:10px;color:#918b7e;margin-top:9px}.ad-hint{font-size:10px;color:#b7a16f;margin-top:8px}.ad-image,.ad-placeholder{width:82px;height:82px;flex:none;border-radius:12px;border:1px solid #4b4029}.ad-image{object-fit:cover;background:#211e17}.ad-placeholder{display:grid;place-items:center;background:linear-gradient(145deg,#262116,#151513);color:#d1b16c;font-size:20px;font-weight:900}.empty,.loading,.error,.preview-note{background:var(--card);padding:16px;border-radius:15px;text-align:center;color:var(--muted);font-size:13px;border:1px solid var(--line)}.preview-note{margin-top:12px;background:#1c1a15;border-color:#403823;text-align:left;font-size:12px;color:#bcb29b}
     .info-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:10px}.info-card h2{font-size:14px;margin:0 0 6px}.info-card p{font-size:13px;color:#bbb3a2;margin:0;white-space:pre-line}.footer{position:fixed;z-index:5;bottom:0;left:0;right:0;padding:9px 13px calc(8px + env(safe-area-inset-bottom));background:#0d0d0cf2;backdrop-filter:blur(14px);border-top:1px solid var(--line)}.footer-inner{max-width:648px;margin:auto}.post-btn{display:block;width:100%;background:var(--green);color:#11100d;text-align:center;text-decoration:none;border:0;border-radius:13px;padding:12px;font-size:14px;font-weight:800;box-shadow:0 5px 14px #d1b16c24}.post-btn.disabled{opacity:.65}.tabbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:9px}.tab{border:0;border-radius:11px;background:transparent;color:var(--muted);padding:8px 4px;font-size:11px;font-weight:700;line-height:1.2}.tab.active{background:var(--pale);color:var(--green)}.small-note{text-align:center;font-size:10px;color:var(--muted);margin-top:5px}
   </style>
 </head>
@@ -140,16 +140,39 @@
       box.innerHTML=rows.map(ad=>{
         const contactUrl=contactLink(ad.contact);
         const date=ad.created_at ? new Date(ad.created_at).toLocaleDateString('uz-UZ') : '';
+        const imageUrl=ad.image_url ? escapeHtml(ad.image_url) : '';
+        const channelUrl=ad.channel_url ? escapeHtml(ad.channel_url) : '';
         return `
-          <article class="ad">
-            <h2 class="ad-title">${escapeHtml(ad.title||'Ish e’loni')}</h2>
-            <div class="ad-location">📍 ${escapeHtml(ad.location||'Manzil ko‘rsatilmagan')}${ad.profession?' · '+escapeHtml(ad.profession):''}</div>
-            ${ad.conditions?`<div class="ad-desc">${escapeHtml(ad.conditions)}</div>`:''}
-            ${contactUrl?`<a class="ad-contact" href="${escapeHtml(contactUrl)}">☎ ${escapeHtml(ad.contact)}</a>`:''}
-            ${ad.channel_url?`<div><a class="channel-link" href="${escapeHtml(ad.channel_url)}" target="_blank" rel="noopener">📢 Kanalda ko‘rish</a></div>`:''}
-            ${date?`<div class="ad-date">Joylangan: ${escapeHtml(date)}</div>`:''}
+          <article class="ad" ${channelUrl?`data-channel-url="${channelUrl}" role="link" tabindex="0" aria-label="${escapeHtml(ad.title||'E’lonni Telegram kanalida ochish')}"`:''}>
+            <div class="ad-info">
+              <h2 class="ad-title">${escapeHtml(ad.title||'Ish e’loni')}</h2>
+              <div class="ad-location">📍 ${escapeHtml(ad.location||'Manzil ko‘rsatilmagan')}${ad.profession?' · '+escapeHtml(ad.profession):''}</div>
+              ${ad.conditions?`<div class="ad-desc">${escapeHtml(ad.conditions)}</div>`:''}
+              ${contactUrl?`<a class="ad-contact" href="${escapeHtml(contactUrl)}">☎ ${escapeHtml(ad.contact)}</a>`:''}
+              ${date?`<div class="ad-date">Joylangan: ${escapeHtml(date)}</div>`:''}
+              ${channelUrl?'<div class="ad-hint">Telegramdagi e’lonni ochish ↗</div>':''}
+            </div>
+            ${imageUrl?`<img class="ad-image" src="${imageUrl}" alt="E’lon rasmi" loading="lazy">`:'<div class="ad-placeholder" aria-hidden="true">IB</div>'}
           </article>`;
       }).join('');
+
+      box.querySelectorAll('.ad[data-channel-url]').forEach(card=>{
+        const openPost=()=>{
+          const url=card.dataset.channelUrl;
+          if(tg?.openTelegramLink) tg.openTelegramLink(url);
+          else window.open(url,'_blank','noopener');
+        };
+        card.addEventListener('click',event=>{
+          if(event.target.closest('a')) return;
+          openPost();
+        });
+        card.addEventListener('keydown',event=>{
+          if(event.key==='Enter'||event.key===' '){
+            event.preventDefault();
+            openPost();
+          }
+        });
+      });
     }
 
     async function loadAds(){
