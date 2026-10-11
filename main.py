@@ -109,7 +109,6 @@ def run_fastapi():
     port = int(os.getenv("PORT", "8080"))
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
-
 RECEIPT_MINUTES = int(
     os.getenv("RECEIPT_MINUTES", "10")
 )
@@ -429,7 +428,9 @@ def get_payment(payment_id):
             """,
             (payment_id,),
         ).fetchone()
-        def latest_payment(ad_id):
+
+
+def latest_payment(ad_id):
     with db() as c:
         return c.execute(
             """
@@ -940,29 +941,6 @@ async def ad_location(
 
     await message.answer(
         """
-💼 <b>Qanday xodim kerak?</b>
-
-Masalan:
-Sotuvchi, ofitsiant, haydovchi
-""",
-        parse_mode="HTML",
-    )
-    @dp.message(AdForm.location)
-async def ad_location(
-    message: types.Message,
-    state: FSMContext,
-):
-    value = (message.text or "").strip()
-
-    if not value:
-        await message.answer("❌ Manzilni yozing.")
-        return
-
-    await state.update_data(location=value)
-    await state.set_state(AdForm.profession)
-
-    await message.answer(
-        """
 💼 <b>Qanday ishchi kerak?</b>
 
 Masalan:
@@ -1451,8 +1429,6 @@ async def paid(
 async def receive_receipt(
     message: types.Message,
     state: FSMContext,
-):
-        state: FSMContext,
 ):
     data = await state.get_data()
     payment_id = data.get("payment_id")
@@ -1953,24 +1929,6 @@ def admin_tariff_keyboard():
                     text=f"2️⃣ {money(tariffs[2]['price'])} so'm",
                     callback_data="edit_tariff_2",
                 ),
-                B(
-                    text=f"3️⃣ {money(tariffs[3]['price'])} so'm",
-                    callback_data="edit_tariff_3",
-                ),
-                B(
-                    text=f"4️⃣ {money(tariffs[4]['price'])} so'm",
-                    callback_data="edit_tariff_4",
-                ),
-            ],
-            [
-                B(
-                    text="⬅️ Admin panel",
-                    callback_data="admin_home",
-                )
-            ],
-        ]
-    )
-                    ),
             ],
             [
                 B(
@@ -2469,7 +2427,8 @@ async def broadcast(
         await asyncio.sleep(0.04)
 
     await state.clear()
-        await message.answer(
+
+    await message.answer(
         f"""
 📣 <b>Xabar yuborish tugadi.</b>
 
@@ -2988,6 +2947,7 @@ async def scheduler_loop():
 # ============================================================
 # RECEIPT TIMEOUT CLEANUP
 # ============================================================
+
 async def payment_cleanup_loop():
     while True:
         try:
@@ -3070,4 +3030,3 @@ if __name__ == "__main__":
         SystemExit,
     ):
         pass
-    
