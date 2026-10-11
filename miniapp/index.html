@@ -1,331 +1,47 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uz">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ish Bazasi — Pricelist</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-        body {
-            background-color: #0b0b0b;
-            color: #ffffff;
-            padding: 16px;
-            padding-bottom: 90px;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 24px;
-        }
-        .brand {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            color: #f3d052;
-        }
-        .subtitle {
-            font-size: 10px;
-            color: #888;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-top: 2px;
-        }
-        .pricelist-title {
-            text-align: right;
-            font-size: 14px;
-            font-weight: 600;
-            color: #aaa;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        .section-title {
-            font-size: 11px;
-            color: #777;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 12px;
-        }
-        .card {
-            background-color: #161616;
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #222;
-            position: relative;
-        }
-        .card.popular {
-            border: 1px solid #f3d052;
-            background: linear-gradient(135deg, #161616 0%, #1f1a0e 100%);
-        }
-        .popular-badge {
-            position: absolute;
-            top: -10px;
-            right: 20px;
-            background-color: #f3d052;
-            color: #000;
-            font-size: 9px;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 6px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .card-left {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-        .number-box {
-            width: 42px;
-            height: 42px;
-            background-color: #222;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 700;
-            color: #fff;
-        }
-        .card.popular .number-box {
-            background-color: #f3d052;
-            color: #000;
-        }
-        .plan-name {
-            font-size: 15px;
-            font-weight: 700;
-            margin-bottom: 3px;
-        }
-        .plan-desc {
-            font-size: 11px;
-            color: #888;
-            margin-bottom: 6px;
-        }
-        .tags {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        .tag {
-            font-size: 9px;
-            padding: 2px 6px;
-            border-radius: 6px;
-            font-weight: 600;
-        }
-        .tag-green { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; }
-        .tag-purple { background-color: rgba(168, 85, 247, 0.15); color: #c084fc; }
-        .tag-pink { background-color: rgba(236, 72, 153, 0.15); color: #f472b6; }
-        .tag-yellow { background-color: rgba(243, 208, 82, 0.15); color: #f3d052; }
-
-        .card-right {
-            text-align: right;
-        }
-        .price {
-            font-size: 16px;
-            font-weight: 800;
-            color: #fff;
-        }
-        .price-sub {
-            font-size: 10px;
-            color: #777;
-            margin-top: 2px;
-        }
-        .instagram-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 24px 0 12px 0;
-        }
-        .instagram-icon {
-            width: 20px;
-            height: 20px;
-            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 10px;
-        }
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 16px;
-            background: linear-gradient(to top, #0b0b0b 80%, transparent);
-        }
-        .btn-contact {
-            display: block;
-            width: 100%;
-            background-color: #f3d052;
-            color: #000;
-            text-align: center;
-            padding: 14px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 14px;
-            text-decoration: none;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        .info-text {
-            font-size: 10px;
-            color: #666;
-            margin-bottom: 8px;
-            text-align: center;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f7f9">
+  <title>Ish Bazasi</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{color-scheme:light;--ink:#13251e;--muted:#718078;--green:#16754b;--pale:#e9f5ee;--line:#e8eeea;--bg:#f6f8f6;--card:#fff;--gold:#c89016}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:0 0 calc(92px + env(safe-area-inset-bottom))}
+    .wrap{max-width:680px;margin:0 auto;padding:20px 16px 12px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.brand{display:flex;align-items:center;gap:11px}.mark{height:44px;width:44px;border-radius:14px;background:var(--green);color:white;display:grid;place-items:center;font-size:21px;font-weight:800}.brand-name{font-size:18px;font-weight:800;letter-spacing:-.3px}.brand-sub{font-size:12px;color:var(--muted)}.about{font-size:12px;color:var(--green);background:var(--pale);border:0;border-radius:20px;padding:8px 11px;font-weight:700}
+    .hero{background:linear-gradient(135deg,#125a3b,#21885b);border-radius:22px;padding:22px;color:white;margin-bottom:25px;box-shadow:0 12px 26px #15623b20}.eyebrow{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#c6ebd3;font-weight:700}.hero h1{font-size:24px;line-height:1.15;margin:9px 0}.hero p{font-size:13px;color:#e0f1e6;margin:0 0 17px;max-width:420px}.hero .hero-btn{display:inline-block;background:white;color:#145a3b;padding:10px 15px;border-radius:12px;text-decoration:none;font-weight:800;font-size:13px}
+    .section{margin:24px 0 12px;display:flex;align-items:end;justify-content:space-between}.section h2{font-size:18px;margin:0;letter-spacing:-.3px}.section span{font-size:11px;color:var(--muted)}.cards{display:grid;gap:10px}.tariff{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:15px;display:flex;justify-content:space-between;gap:12px;align-items:center}.tariff.vip{border-color:#ead9ae;background:linear-gradient(120deg,#fff,#fffaf0)}.tariff-name{font-weight:800;font-size:15px}.tariff-meta{font-size:12px;color:var(--muted);margin-top:3px}.tariff-badge{display:inline-block;background:#f3eddd;color:#8a6310;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:5px;vertical-align:2px}.price{font-weight:850;font-size:16px;text-align:right;white-space:nowrap}.currency{font-size:10px;font-weight:600;color:var(--muted)}
+    .ad{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:15px}.ad-title{font-size:15px;font-weight:800;margin:0 0 7px}.ad-location{font-size:12px;color:var(--green);font-weight:700;margin-bottom:8px}.ad-desc{font-size:13px;color:#4b5c53;white-space:pre-line}.ad-contact{display:inline-block;margin-top:11px;color:var(--green);font-size:13px;font-weight:700;text-decoration:none}.ad-date{font-size:10px;color:#94a098;margin-top:10px}.empty,.loading,.error{background:white;padding:18px;border-radius:15px;text-align:center;color:var(--muted);font-size:13px;border:1px solid var(--line)}.about-box{background:#edf4ef;border-radius:16px;padding:15px;margin-top:22px}.about-box b{font-size:13px}.about-box p{font-size:12px;color:#607168;margin:6px 0 0}.footer{position:fixed;z-index:5;bottom:0;left:0;right:0;padding:11px 16px calc(11px + env(safe-area-inset-bottom));background:#f6f8f6ed;backdrop-filter:blur(14px);border-top:1px solid var(--line)}.footer-inner{max-width:648px;margin:auto}.post-btn{display:block;width:100%;background:var(--green);color:white;text-align:center;text-decoration:none;border:0;border-radius:14px;padding:14px;font-size:15px;font-weight:800;box-shadow:0 5px 14px #16754b2b}.post-btn.disabled{opacity:.6}.small-note{text-align:center;font-size:10px;color:var(--muted);margin-top:5px}.hidden{display:none!important}
+  </style>
 </head>
 <body>
-
-    <div class="header">
-        <div>
-            <div class="brand">ISH BAZASI</div>
-            <div class="subtitle">Vakansiya platformasi</div>
-        </div>
-        <div class="pricelist-title">Telegram<br>Pricelist</div>
-    </div>
-
-    <div class="section-title">Telegram Tariflar</div>
-
-    <div class="card">
-        <div class="card-left">
-            <div class="number-box">2</div>
-            <div>
-                <div class="plan-name">START</div>
-                <div class="plan-desc">2 kunlik e'lon</div>
-                <div class="tags">
-                    <span class="tag tag-green">Kuniga 1× joylash</span>
-                </div>
-            </div>
-        </div>
-        <div class="card-right">
-            <div class="price">89 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
-            <div class="price-sub">44 500 / e'lon</div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-left">
-            <div class="number-box">4</div>
-            <div>
-                <div class="plan-name">STANDART</div>
-                <div class="plan-desc">4 kunlik e'lon</div>
-                <div class="tags">
-                    <span class="tag tag-green">Kuniga 1× joylash</span>
-                    <span class="tag tag-purple">Instagram Stories</span>
-                </div>
-            </div>
-        </div>
-        <div class="card-right">
-            <div class="price">159 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
-            <div class="price-sub">39 750 / e'lon</div>
-        </div>
-    </div>
-
-    <div class="card popular">
-        <div class="popular-badge">Mashhur</div>
-        <div class="card-left">
-            <div class="number-box" style="background:#f3d052; color:#000;">6</div>
-            <div>
-                <div class="plan-name">BOOST</div>
-                <div class="plan-desc">6 kunlik e'lon</div>
-                <div class="tags">
-                    <span class="tag tag-green">Kuniga 2× joylash</span>
-                    <span class="tag tag-purple">Instagram Stories</span>
-                </div>
-            </div>
-        </div>
-        <div class="card-right">
-            <div class="price">199 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
-            <div class="price-sub">16 583 / e'lon</div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-left">
-            <div class="number-box">12</div>
-            <div>
-                <div class="plan-name">PREMIUM</div>
-                <div class="plan-desc">12 kunlik e'lon</div>
-                <div class="tags">
-                    <span class="tag tag-green">Kuniga 2× joylash</span>
-                    <span class="tag tag-purple">Instagram Stories</span>
-                    <span class="tag tag-pink">Instagram Reels</span>
-                </div>
-            </div>
-        </div>
-        <div class="card-right">
-            <div class="price">299 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
-            <div class="price-sub">12 458 / e'lon</div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-left">
-            <div class="number-box">30</div>
-            <div>
-                <div class="plan-name">VIP</div>
-                <div class="plan-desc">30 kunlik e'lon</div>
-                <div class="tags">
-                    <span class="tag tag-green">Kuniga 2× joylash</span>
-                    <span class="tag tag-purple">3× Stories</span>
-                    <span class="tag tag-pink">3× Reels</span>
-                    <span class="tag tag-yellow">3 kun pin</span>
-                </div>
-            </div>
-        </div>
-        <div class="card-right">
-            <div class="price">649 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
-            <div class="price-sub">10 817 / e'lon</div>
-        </div>
-    </div>
-
-    <div class="instagram-header">
-        <div class="instagram-icon">📷</div>
-        <div style="font-size: 13px; font-weight: 700;">Instagram xizmatlari</div>
-    </div>
-    <div style="font-size: 11px; color: #777; margin-bottom: 12px;">208 000 ta obunachi</div>
-
-    <div class="card">
-        <div class="card-left">
-            <div>
-                <div class="plan-name">Instagram Reels</div>
-                <div class="plan-desc">1 ta video e'lon</div>
-            </div>
-        </div>
-        <div class="card-right">
-            <div class="price">199 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-left">
-            <div>
-                <div class="plan-name">Instagram Stories</div>
-                <div class="plan-desc">1 ta stories e'lon</div>
-            </div>
-        </div>
-        <div class="card-right">
-            <div class="price">49 000 <span style="font-size:11px;font-weight:normal;">so'm</span></div>
-        </div>
-    </div>
-
-    <div class="footer">
-        <div class="info-text">Batafsil ma'lumot uchun shaxsiy xabarga yozing</div>
-        <a href="https://t.me/rustamovvvll" target="_blank" class="btn-contact">Bog'lanish</a>
-    </div>
-
+  <main class="wrap">
+    <header class="top">
+      <div class="brand"><div class="mark">IB</div><div><div class="brand-name">Ish Bazasi</div><div class="brand-sub">Ish e’lonlari platformasi</div></div></div>
+      <button class="about" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'})">Bot haqida</button>
+    </header>
+    <section class="hero"><div class="eyebrow">Ish beruvchilar uchun</div><h1>Kerakli xodimni tez toping</h1><p>E’loningizni bot orqali yuboring, biz uni Ish Bazasi kanalida joylaymiz.</p><a class="hero-btn post-link" href="#">E’lon berish <span aria-hidden="true">→</span></a></section>
+    <section><div class="section"><h2>Tariflar</h2><span>Botdagi amaldagi narxlar</span></div><div id="tariffs" class="cards"><div class="loading">Tariflar yuklanmoqda…</div></div></section>
+    <section><div class="section"><h2>So‘nggi e’lonlar</h2><span id="ad-count"></span></div><div id="ads" class="cards"><div class="loading">E’lonlar yuklanmoqda…</div></div></section>
+    <section id="about" class="about-box"><b>Ish Bazasi haqida</b><p>Ish beruvchilar vakansiya e’lonlarini botda ketma-ket savollarga javob berib yuboradi. Tarif va joylash jadvali tanlangan paketga bog‘liq. E’lon berish tugmasi sizni botga qaytaradi.</p></section>
+  </main>
+  <footer class="footer"><div class="footer-inner"><a class="post-btn post-link" href="#">🚀 E’lon berish</a><div class="small-note">E’lon botdagi savol-javob orqali yuboriladi</div></div></footer>
+  <script>
+    const tg = window.Telegram?.WebApp;
+    tg?.ready(); tg?.expand();
+    const fmt = new Intl.NumberFormat('uz-UZ');
+    const safe = (s='') => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    function setBotUrl(url){
+      document.querySelectorAll('.post-link').forEach(el=>{
+        if(!url){el.classList.add('disabled');el.href='#';el.addEventListener('click',e=>{e.preventDefault(); alert('Bot havolasi sozlanmagan. Railway’da BOT_USERNAME qiymatini kiriting.');});return;}
+        el.href=url; el.addEventListener('click',e=>{e.preventDefault(); if(tg?.openTelegramLink) tg.openTelegramLink(url); else location.href=url;});
+      });
+    }
+    async function loadConfig(){try{const r=await fetch('/api/config');const c=await r.json();setBotUrl(c.bot_url||'')}catch{setBotUrl('')}}
+    async function loadTariffs(){const box=document.getElementById('tariffs');try{const r=await fetch('/api/tariffs');if(!r.ok)throw Error();const rows=await r.json();if(!rows.length){box.innerHTML='<div class="empty">Tariflar hozircha mavjud emas.</div>';return;}box.innerHTML=rows.map(t=>`<article class="tariff ${t.vip?'vip':''}"><div><div class="tariff-name">${safe(t.name)}${t.vip?'<span class="tariff-badge">VIP</span>':''}</div><div class="tariff-meta">${t.days} kun · ${t.posts} marta joylanadi · har ${t.interval_hours} soatda</div></div><div class="price">${fmt.format(t.price)}<div class="currency">so‘m</div></div></article>`).join('')}catch{box.innerHTML='<div class="error">Tariflarni yuklab bo‘lmadi. Keyinroq qayta urinib ko‘ring.</div>'}}
+    async function loadAds(){const box=document.getElementById('ads');try{const r=await fetch('/api/ads');if(!r.ok)throw Error();const rows=await r.json();document.getElementById('ad-count').textContent=rows.length?`${rows.length} ta`:' ';if(!rows.length){box.innerHTML='<div class="empty">Hozircha faol e’lon yo‘q.</div>';return;}box.innerHTML=rows.map(a=>`<article class="ad"><h3 class="ad-title">${safe(a.title||'Ish e’loni')}</h3><div class="ad-location">📍 ${safe(a.location||'Manzil ko‘rsatilmagan')}${a.profession?' · '+safe(a.profession):''}</div>${a.conditions?`<div class="ad-desc">${safe(a.conditions)}</div>`:''}${a.contact?`<a class="ad-contact" href="${/^https?:\/\//i.test(a.contact)?safe(a.contact):'#'}">☎ ${safe(a.contact)}</a>`:''}<div class="ad-date">Ish Bazasi’da joylandi</div></article>`).join('')}catch{box.innerHTML='<div class="error">E’lonlarni yuklab bo‘lmadi. Keyinroq qayta urinib ko‘ring.</div>'}}
+    loadConfig(); loadTariffs(); loadAds();
+  </script>
 </body>
 </html>
