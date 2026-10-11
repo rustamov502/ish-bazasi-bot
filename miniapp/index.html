@@ -3,45 +3,200 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f6f7f9">
+  <meta name="theme-color" content="#0d0d0c">
   <title>Ish Bazasi</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root{color-scheme:light;--ink:#13251e;--muted:#718078;--green:#16754b;--pale:#e9f5ee;--line:#e8eeea;--bg:#f6f8f6;--card:#fff;--gold:#c89016}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:0 0 calc(92px + env(safe-area-inset-bottom))}
-    .wrap{max-width:680px;margin:0 auto;padding:20px 16px 12px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.brand{display:flex;align-items:center;gap:11px}.mark{height:44px;width:44px;border-radius:14px;background:var(--green);color:white;display:grid;place-items:center;font-size:21px;font-weight:800}.brand-name{font-size:18px;font-weight:800;letter-spacing:-.3px}.brand-sub{font-size:12px;color:var(--muted)}.about{font-size:12px;color:var(--green);background:var(--pale);border:0;border-radius:20px;padding:8px 11px;font-weight:700}
-    .hero{background:linear-gradient(135deg,#125a3b,#21885b);border-radius:22px;padding:22px;color:white;margin-bottom:25px;box-shadow:0 12px 26px #15623b20}.eyebrow{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#c6ebd3;font-weight:700}.hero h1{font-size:24px;line-height:1.15;margin:9px 0}.hero p{font-size:13px;color:#e0f1e6;margin:0 0 17px;max-width:420px}.hero .hero-btn{display:inline-block;background:white;color:#145a3b;padding:10px 15px;border-radius:12px;text-decoration:none;font-weight:800;font-size:13px}
-    .section{margin:24px 0 12px;display:flex;align-items:end;justify-content:space-between}.section h2{font-size:18px;margin:0;letter-spacing:-.3px}.section span{font-size:11px;color:var(--muted)}.cards{display:grid;gap:10px}.tariff{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:15px;display:flex;justify-content:space-between;gap:12px;align-items:center}.tariff.vip{border-color:#ead9ae;background:linear-gradient(120deg,#fff,#fffaf0)}.tariff-name{font-weight:800;font-size:15px}.tariff-meta{font-size:12px;color:var(--muted);margin-top:3px}.tariff-badge{display:inline-block;background:#f3eddd;color:#8a6310;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:5px;vertical-align:2px}.price{font-weight:850;font-size:16px;text-align:right;white-space:nowrap}.currency{font-size:10px;font-weight:600;color:var(--muted)}
-    .ad{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:15px}.ad-title{font-size:15px;font-weight:800;margin:0 0 7px}.ad-location{font-size:12px;color:var(--green);font-weight:700;margin-bottom:8px}.ad-desc{font-size:13px;color:#4b5c53;white-space:pre-line}.ad-contact{display:inline-block;margin-top:11px;color:var(--green);font-size:13px;font-weight:700;text-decoration:none}.ad-date{font-size:10px;color:#94a098;margin-top:10px}.empty,.loading,.error{background:white;padding:18px;border-radius:15px;text-align:center;color:var(--muted);font-size:13px;border:1px solid var(--line)}.about-box{background:#edf4ef;border-radius:16px;padding:15px;margin-top:22px}.about-box b{font-size:13px}.about-box p{font-size:12px;color:#607168;margin:6px 0 0}.footer{position:fixed;z-index:5;bottom:0;left:0;right:0;padding:11px 16px calc(11px + env(safe-area-inset-bottom));background:#f6f8f6ed;backdrop-filter:blur(14px);border-top:1px solid var(--line)}.footer-inner{max-width:648px;margin:auto}.post-btn{display:block;width:100%;background:var(--green);color:white;text-align:center;text-decoration:none;border:0;border-radius:14px;padding:14px;font-size:15px;font-weight:800;box-shadow:0 5px 14px #16754b2b}.post-btn.disabled{opacity:.6}.small-note{text-align:center;font-size:10px;color:var(--muted);margin-top:5px}.hidden{display:none!important}
+    :root{color-scheme:dark;--ink:#f3efe5;--muted:#a9a394;--green:#d1b16c;--pale:#29251b;--line:#343128;--bg:#0d0d0c;--card:#171715;--gold:#e0c37a}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:0 0 calc(160px + env(safe-area-inset-bottom))}
+    .wrap{max-width:680px;margin:0 auto;padding:18px 16px 12px}.top{display:flex;align-items:center;gap:11px;margin-bottom:17px}.mark{height:42px;width:42px;flex:none;border-radius:14px;background:var(--green);color:#11100d;display:grid;place-items:center;font-size:19px;font-weight:800}.brand-name{font-size:18px;font-weight:800;letter-spacing:-.3px}.brand-sub{font-size:12px;color:var(--muted)}
+    .screen{display:none}.screen.active{display:block}.hero{background:linear-gradient(135deg,#171715,#211e17);border:1px solid #4b4029;border-radius:21px;padding:21px;color:var(--ink);margin:8px 0 23px;box-shadow:0 12px 26px #0005}.eyebrow{font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:#e0c37a;font-weight:700}.hero h1{font-size:23px;line-height:1.15;margin:8px 0}.hero p{font-size:13px;color:#c7c0b1;margin:0;max-width:440px}
+    .section{margin:20px 0 12px;display:flex;align-items:end;justify-content:space-between;gap:10px}.section h2,.screen-title{font-size:19px;margin:0;letter-spacing:-.3px}.section span{font-size:11px;color:var(--muted)}.screen-intro{font-size:13px;color:var(--muted);margin:7px 0 16px}.cards{display:grid;gap:10px}.tariff{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;display:flex;justify-content:space-between;gap:12px;align-items:center}.tariff.vip{border-color:#76623a;background:linear-gradient(120deg,#191815,#211e17)}.tariff-name{font-weight:800;font-size:14px}.tariff-meta{font-size:12px;color:var(--muted);margin-top:4px}.tariff-badge{display:inline-block;background:#332b1b;color:var(--gold);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:5px;vertical-align:2px}.price{font-weight:850;font-size:16px;text-align:right;white-space:nowrap}.currency{font-size:10px;font-weight:600;color:var(--muted)}
+    .ad{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px}.ad-title{font-size:15px;font-weight:800;margin:0 0 7px}.ad-location{font-size:12px;color:var(--green);font-weight:700;margin-bottom:8px}.ad-desc{font-size:13px;color:#c5beaf;white-space:pre-line}.ad-contact,.channel-link{display:inline-block;margin-top:10px;color:var(--green);font-size:13px;font-weight:700;text-decoration:none}.ad-date{font-size:10px;color:#918b7e;margin-top:9px}.empty,.loading,.error,.preview-note{background:var(--card);padding:16px;border-radius:15px;text-align:center;color:var(--muted);font-size:13px;border:1px solid var(--line)}.preview-note{margin-top:12px;background:#1c1a15;border-color:#403823;text-align:left;font-size:12px;color:#bcb29b}
+    .info-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:10px}.info-card h2{font-size:14px;margin:0 0 6px}.info-card p{font-size:13px;color:#bbb3a2;margin:0;white-space:pre-line}.footer{position:fixed;z-index:5;bottom:0;left:0;right:0;padding:9px 13px calc(8px + env(safe-area-inset-bottom));background:#0d0d0cf2;backdrop-filter:blur(14px);border-top:1px solid var(--line)}.footer-inner{max-width:648px;margin:auto}.post-btn{display:block;width:100%;background:var(--green);color:#11100d;text-align:center;text-decoration:none;border:0;border-radius:13px;padding:12px;font-size:14px;font-weight:800;box-shadow:0 5px 14px #d1b16c24}.post-btn.disabled{opacity:.65}.tabbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:9px}.tab{border:0;border-radius:11px;background:transparent;color:var(--muted);padding:8px 4px;font-size:11px;font-weight:700;line-height:1.2}.tab.active{background:var(--pale);color:var(--green)}.small-note{text-align:center;font-size:10px;color:var(--muted);margin-top:5px}
   </style>
 </head>
 <body>
   <main class="wrap">
     <header class="top">
-      <div class="brand"><div class="mark">IB</div><div><div class="brand-name">Ish Bazasi</div><div class="brand-sub">Ish e’lonlari platformasi</div></div></div>
-      <button class="about" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'})">Bot haqida</button>
+      <div class="mark">IB</div>
+      <div><div class="brand-name">Ish Bazasi</div><div class="brand-sub">Ish e’lonlari platformasi</div></div>
     </header>
-    <section class="hero"><div class="eyebrow">Ish beruvchilar uchun</div><h1>Kerakli xodimni tez toping</h1><p>E’loningizni bot orqali yuboring, biz uni Ish Bazasi kanalida joylaymiz.</p><a class="hero-btn post-link" href="#">E’lon berish <span aria-hidden="true">→</span></a></section>
-    <section><div class="section"><h2>Tariflar</h2><span>Botdagi amaldagi narxlar</span></div><div id="tariffs" class="cards"><div class="loading">Tariflar yuklanmoqda…</div></div></section>
-    <section><div class="section"><h2>So‘nggi e’lonlar</h2><span id="ad-count"></span></div><div id="ads" class="cards"><div class="loading">E’lonlar yuklanmoqda…</div></div></section>
-    <section id="about" class="about-box"><b>Ish Bazasi haqida</b><p>Ish beruvchilar vakansiya e’lonlarini botda ketma-ket savollarga javob berib yuboradi. Tarif va joylash jadvali tanlangan paketga bog‘liq. E’lon berish tugmasi sizni botga qaytaradi.</p></section>
+
+    <section id="view-tariffs" class="screen active" aria-labelledby="title-tariffs">
+      <div class="hero"><div class="eyebrow">Ish beruvchilar uchun</div><h1 id="title-tariffs">Kerakli xodimni tez toping</h1><p>E’loningizni bot orqali yuboring, biz uni Ish Bazasi kanalida joylaymiz.</p></div>
+      <div class="section"><h2>Tariflar</h2><span>Botdagi amaldagi narxlar</span></div>
+      <div id="tariffs" class="cards"><div class="loading">Tariflar yuklanmoqda…</div></div>
+      <div id="preview-note" class="preview-note" hidden></div>
+    </section>
+
+    <section id="view-ads" class="screen" aria-labelledby="title-ads">
+      <h1 id="title-ads" class="screen-title">E’lonlar</h1>
+      <p class="screen-intro">Ish Bazasi Telegram kanalida joylangan faol e’lonlar.</p>
+      <div id="ads" class="cards"><div class="loading">E’lonlar yuklanmoqda…</div></div>
+      <div id="ads-preview-note" class="preview-note" hidden></div>
+    </section>
+
+    <section id="view-info" class="screen" aria-labelledby="title-info">
+      <h1 id="title-info" class="screen-title">Ish Bazasi Info</h1>
+      <p class="screen-intro">Bot va e’lon joylash tartibi haqida ma’lumot.</p>
+      <article class="info-card"><h2>Ish Bazasi nima?</h2><p>Ish beruvchilar vakansiyalarini Ish Bazasi kanalida e’lon qilish uchun foydalanadigan Telegram bot va e’lonlar sahifasi.</p></article>
+      <article class="info-card"><h2>E’lon qanday beriladi?</h2><p>“E’lon berish” tugmasini bosing. Botda ish nomi, manzil, ish turi, shartlar va aloqa ma’lumotlarini ketma-ket yuboring. So‘ng tarifni tanlab, to‘lov chekini botga jo‘nating.</p></article>
+      <article class="info-card"><h2>E’lon qachon chiqadi?</h2><p>Admin to‘lovni tasdiqlagach, e’lon kanalga joylanadi. Keyingi yangilanishlar tanlangan tarif jadvali bo‘yicha amalga oshadi.</p></article>
+    </section>
   </main>
-  <footer class="footer"><div class="footer-inner"><a class="post-btn post-link" href="#">🚀 E’lon berish</a><div class="small-note">E’lon botdagi savol-javob orqali yuboriladi</div></div></footer>
+
+  <footer class="footer"><div class="footer-inner">
+    <a id="post-button" class="post-btn post-link" href="#">🚀 E’lon berish</a>
+    <div class="small-note">E’lon botdagi savol-javob orqali yuboriladi</div>
+    <nav class="tabbar" aria-label="Bo‘limlar">
+      <button class="tab active" type="button" data-view="tariffs">Tariflar</button>
+      <button class="tab" type="button" data-view="ads">E’lonlar</button>
+      <button class="tab" type="button" data-view="info">Ish Bazasi<br>Info</button>
+    </nav>
+  </div></footer>
+
   <script>
     const tg = window.Telegram?.WebApp;
-    tg?.ready(); tg?.expand();
-    const fmt = new Intl.NumberFormat('uz-UZ');
-    const safe = (s='') => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    function setBotUrl(url){
-      document.querySelectorAll('.post-link').forEach(el=>{
-        if(!url){el.classList.add('disabled');el.href='#';el.addEventListener('click',e=>{e.preventDefault(); alert('Bot havolasi sozlanmagan. Railway’da BOT_USERNAME qiymatini kiriting.');});return;}
-        el.href=url; el.addEventListener('click',e=>{e.preventDefault(); if(tg?.openTelegramLink) tg.openTelegramLink(url); else location.href=url;});
+    tg?.ready();
+    tg?.expand();
+
+    const localPreview = location.protocol === 'file:';
+    const formatMoney = new Intl.NumberFormat('uz-UZ');
+    const defaultTariffs = [
+      {id:1,name:'1 kun — 2 MARTA',days:1,posts:2,interval_hours:12,price:22000,vip:false},
+      {id:2,name:'1 kun — 4 MARTA',days:1,posts:4,interval_hours:6,price:35000,vip:false},
+      {id:3,name:'3 kun — 6 MARTA',days:3,posts:6,interval_hours:12,price:69000,vip:false},
+      {id:4,name:'VIP — 7 kun — kuniga 3 MARTA',days:7,posts:21,interval_hours:8,price:159000,vip:true}
+    ];
+
+    const escapeHtml = (value='') => String(value).replace(/[&<>"']/g, char => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[char]));
+
+    function showView(name){
+      document.querySelectorAll('.screen').forEach(section => {
+        section.classList.toggle('active', section.id === `view-${name}`);
       });
+      document.querySelectorAll('.tab').forEach(button => {
+        button.classList.toggle('active', button.dataset.view === name);
+      });
+      window.scrollTo({top:0,behavior:'smooth'});
     }
-    async function loadConfig(){try{const r=await fetch('/api/config');const c=await r.json();setBotUrl(c.bot_url||'')}catch{setBotUrl('')}}
-    async function loadTariffs(){const box=document.getElementById('tariffs');try{const r=await fetch('/api/tariffs');if(!r.ok)throw Error();const rows=await r.json();if(!rows.length){box.innerHTML='<div class="empty">Tariflar hozircha mavjud emas.</div>';return;}box.innerHTML=rows.map(t=>`<article class="tariff ${t.vip?'vip':''}"><div><div class="tariff-name">${safe(t.name)}${t.vip?'<span class="tariff-badge">VIP</span>':''}</div><div class="tariff-meta">${t.days} kun · ${t.posts} marta joylanadi · har ${t.interval_hours} soatda</div></div><div class="price">${fmt.format(t.price)}<div class="currency">so‘m</div></div></article>`).join('')}catch{box.innerHTML='<div class="error">Tariflarni yuklab bo‘lmadi. Keyinroq qayta urinib ko‘ring.</div>'}}
-    async function loadAds(){const box=document.getElementById('ads');try{const r=await fetch('/api/ads');if(!r.ok)throw Error();const rows=await r.json();document.getElementById('ad-count').textContent=rows.length?`${rows.length} ta`:' ';if(!rows.length){box.innerHTML='<div class="empty">Hozircha faol e’lon yo‘q.</div>';return;}box.innerHTML=rows.map(a=>`<article class="ad"><h3 class="ad-title">${safe(a.title||'Ish e’loni')}</h3><div class="ad-location">📍 ${safe(a.location||'Manzil ko‘rsatilmagan')}${a.profession?' · '+safe(a.profession):''}</div>${a.conditions?`<div class="ad-desc">${safe(a.conditions)}</div>`:''}${a.contact?`<a class="ad-contact" href="${/^https?:\/\//i.test(a.contact)?safe(a.contact):'#'}">☎ ${safe(a.contact)}</a>`:''}<div class="ad-date">Ish Bazasi’da joylandi</div></article>`).join('')}catch{box.innerHTML='<div class="error">E’lonlarni yuklab bo‘lmadi. Keyinroq qayta urinib ko‘ring.</div>'}}
-    loadConfig(); loadTariffs(); loadAds();
+
+    document.querySelectorAll('.tab').forEach(button => {
+      button.addEventListener('click', () => showView(button.dataset.view));
+    });
+
+    function renderTariffs(rows){
+      const box = document.getElementById('tariffs');
+      if(!rows.length){
+        box.innerHTML = '<div class="empty">Tariflar hozircha mavjud emas.</div>';
+        return;
+      }
+      box.innerHTML = rows.map(t => `
+        <article class="tariff ${t.vip ? 'vip' : ''}">
+          <div>
+            <div class="tariff-name">${escapeHtml(t.name)}${t.vip ? '<span class="tariff-badge">VIP</span>' : ''}</div>
+            <div class="tariff-meta">${Number(t.days)} kun · ${Number(t.posts)} marta joylanadi · har ${Number(t.interval_hours)} soatda</div>
+          </div>
+          <div class="price">${formatMoney.format(Number(t.price))}<div class="currency">so‘m</div></div>
+        </article>`).join('');
+    }
+
+    async function loadTariffs(){
+      if(localPreview){
+        renderTariffs(defaultTariffs);
+        const note=document.getElementById('preview-note');
+        note.textContent='Bu kompyuterdagi ko‘rinish. Haqiqiy tarif narxlari Mini App Telegram bot serveridan ochilganda yuklanadi.';
+        note.hidden=false;
+        return;
+      }
+      const box=document.getElementById('tariffs');
+      try{
+        const response=await fetch('/api/tariffs');
+        if(!response.ok) throw new Error('API error');
+        renderTariffs(await response.json());
+      }catch{
+        box.innerHTML='<div class="error">Tariflarni yuklab bo‘lmadi. Mini App serveri ishlayotganini tekshiring.</div>';
+      }
+    }
+
+    function contactLink(contact){
+      const value=String(contact||'').trim();
+      if(/^https?:\/\//i.test(value)) return value;
+      if(/^@[A-Za-z0-9_]{5,}$/i.test(value)) return `https://t.me/${value.slice(1)}`;
+      const phone=value.replace(/[^0-9+]/g,'');
+      if(/^\+?[0-9]{7,15}$/.test(phone)) return `tel:${phone}`;
+      return '';
+    }
+
+    function renderAds(rows){
+      const box=document.getElementById('ads');
+      if(!rows.length){
+        box.innerHTML='<div class="empty">Hozircha faol kanal e’lonlari yo‘q.</div>';
+        return;
+      }
+      box.innerHTML=rows.map(ad=>{
+        const contactUrl=contactLink(ad.contact);
+        const date=ad.created_at ? new Date(ad.created_at).toLocaleDateString('uz-UZ') : '';
+        return `
+          <article class="ad">
+            <h2 class="ad-title">${escapeHtml(ad.title||'Ish e’loni')}</h2>
+            <div class="ad-location">📍 ${escapeHtml(ad.location||'Manzil ko‘rsatilmagan')}${ad.profession?' · '+escapeHtml(ad.profession):''}</div>
+            ${ad.conditions?`<div class="ad-desc">${escapeHtml(ad.conditions)}</div>`:''}
+            ${contactUrl?`<a class="ad-contact" href="${escapeHtml(contactUrl)}">☎ ${escapeHtml(ad.contact)}</a>`:''}
+            ${ad.channel_url?`<div><a class="channel-link" href="${escapeHtml(ad.channel_url)}" target="_blank" rel="noopener">📢 Kanalda ko‘rish</a></div>`:''}
+            ${date?`<div class="ad-date">Joylangan: ${escapeHtml(date)}</div>`:''}
+          </article>`;
+      }).join('');
+    }
+
+    async function loadAds(){
+      if(localPreview){
+        document.getElementById('ads').innerHTML='<div class="empty">Faol e’lonlar Telegram kanalidan server orqali yuklanadi.</div>';
+        const note=document.getElementById('ads-preview-note');
+        note.textContent='Kanal e’lonlarini ko‘rish uchun Mini App’ni bot ichidan oching yoki loyihani Railway’ga joylang.';
+        note.hidden=false;
+        return;
+      }
+      const box=document.getElementById('ads');
+      try{
+        const response=await fetch('/api/ads');
+        if(!response.ok) throw new Error('API error');
+        renderAds(await response.json());
+      }catch{
+        box.innerHTML='<div class="error">E’lonlarni yuklab bo‘lmadi. Mini App serveri ishlayotganini tekshiring.</div>';
+      }
+    }
+
+    async function loadBotLink(){
+      const button=document.getElementById('post-button');
+      try{
+        if(localPreview) throw new Error('Local preview');
+        const response=await fetch('/api/config');
+        if(!response.ok) throw new Error('API error');
+        const config=await response.json();
+        if(!config.bot_url) throw new Error('Bot URL missing');
+        button.href=config.bot_url;
+        button.addEventListener('click',event=>{
+          event.preventDefault();
+          if(tg?.openTelegramLink) tg.openTelegramLink(config.bot_url);
+          else location.href=config.bot_url;
+        });
+      }catch{
+        button.classList.add('disabled');
+        button.href='#';
+        button.addEventListener('click',event=>{
+          event.preventDefault();
+          alert(localPreview ? 'E’lon berish uchun Mini App’ni Telegram bot ichidan oching.' : 'Bot havolasi olinmadi. Server sozlamalarini tekshiring.');
+        });
+      }
+    }
+
+    loadTariffs();
+    loadAds();
+    loadBotLink();
   </script>
 </body>
 </html>
